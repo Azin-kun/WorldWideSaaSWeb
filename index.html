@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Homeslice — Eatery &amp; Bistro · Surakarta</title>
+<meta name="description" content="Homeslice Eatery &amp; Bistro in Solo (Surakarta). Western classics &amp; honest home cooking in a warm, low-lit room. No Pork · No Lard."/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link id="gfonts" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&amp;family=Montserrat:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --esp:#160A06;--brn:#2C1810;--brn2:#4A2A18;
+  --gld:#C9934A;--gld2:#E1B66C;--gld3:rgba(201,147,74,.18);
+  --crm:#FAF6EF;--crm2:#F2E8D8;
+  --line:rgba(201,147,74,.28);--line2:rgba(201,147,74,.5);
+  --ter:#B65C3A;--ter2:#D07A52;
+  --ff:'Cormorant Garamond',Georgia,serif;
+  --fs:'Montserrat',system-ui,sans-serif;
+  --ease:cubic-bezier(.25,.46,.45,.94);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+body{background:var(--esp);color:var(--crm);font-family:var(--fs);line-height:1.6}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1180px;margin:0 auto;padding:0 1.6rem}
+.label{font-size:.6rem;letter-spacing:.4em;text-transform:uppercase;color:var(--gld);font-weight:600}
+.serif{font-family:var(--ff)}
+.btn{display:inline-block;font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;
+  padding:.9rem 2rem;font-weight:700;cursor:pointer;transition:all .3s var(--ease);border:1px solid transparent}
+.btn-solid{background:var(--gld);color:var(--esp)}
+.btn-solid:hover{background:var(--crm)}
+.btn-outline{border-color:rgba(250,246,239,.4);color:var(--crm);background:transparent}
+.btn-outline:hover{border-color:var(--gld);color:var(--gld)}
+
+/* nav */
+.nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;
+  padding:1rem 1.6rem;transition:all .4s var(--ease)}
+.nav.solid{background:rgba(22,10,6,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);padding:.7rem 1.6rem}
+.nav-brand{font-family:var(--ff);font-size:1.5rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--crm)}
+.nav-brand b{color:var(--gld)}
+.nav-links{display:flex;gap:2rem;align-items:center}
+.nav-links a{font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--crm2);font-weight:500;transition:color .3s}
+.nav-links a:hover{color:var(--gld)}
+.nav-cta{font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;padding:.6rem 1.3rem;border:1px solid var(--gld);color:var(--gld);font-weight:600;cursor:pointer;transition:all .3s}
+.nav-cta:hover{background:var(--gld);color:var(--esp)}
+.nav-burger{display:none;font-size:1.5rem;color:var(--crm);background:none;border:none;cursor:pointer}
+@media(max-width:820px){
+  .nav-links{position:fixed;inset:0 0 0 auto;width:min(78vw,320px);flex-direction:column;justify-content:center;gap:1.6rem;
+    background:rgba(22,10,6,.97);transform:translateX(100%);transition:transform .4s var(--ease);padding:2rem}
+  .nav-links.open{transform:translateX(0)}
+  .nav-burger{display:block;z-index:60}
+}
+
+/* hero */
+.hero{position:relative;min-height:100vh;display:flex;align-items:center;overflow:hidden}
+.hero-bg{position:absolute;inset:0;background:linear-gradient(120deg,#1a0d07,#2C1810 60%,#3a2114);z-index:0}
+.hero-bg img{width:100%;height:100%;object-fit:cover;opacity:.5}
+.hero-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(to right,rgba(22,10,6,.86),rgba(22,10,6,.35))}
+.hero-inner{position:relative;z-index:2;padding-top:6rem}
+.hero-tag{margin-bottom:1.6rem}
+.hero h1{font-family:var(--ff);font-size:clamp(3rem,8vw,6.6rem);font-weight:700;line-height:.94;text-transform:uppercase;
+  letter-spacing:.02em;margin-bottom:1.3rem;text-shadow:0 10px 24px rgba(0,0,0,.3)}
+.hero h1 em{font-style:italic;font-weight:300;color:var(--gld2)}
+.hero p{max-width:30rem;color:var(--crm2);font-size:1.02rem;margin-bottom:2rem}
+.hero-cta{display:flex;gap:1rem;flex-wrap:wrap}
+
+/* generic section */
+section.block{padding:6rem 0;position:relative}
+.sec-brn{background:var(--brn)}
+.sec-brn2{background:var(--brn2)}
+.block h2{font-family:var(--ff);font-size:clamp(2.2rem,5vw,4rem);font-weight:700;text-transform:uppercase;
+  line-height:1.02;letter-spacing:.02em;margin:.8rem 0 1.2rem}
+.block h2 em{font-style:italic;font-weight:300;color:var(--gld2)}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:3.5rem;align-items:center}
+.split img{border-radius:4px;box-shadow:0 30px 60px rgba(0,0,0,.4);height:100%;object-fit:cover;max-height:460px;width:100%}
+.split p{color:var(--crm2);margin-bottom:1rem}
+@media(max-width:820px){.split{grid-template-columns:1fr;gap:1.8rem}.split img{max-height:300px}}
+.stats{display:flex;gap:2.5rem;margin-top:1.6rem;padding-top:1.4rem;border-top:1px solid var(--line);flex-wrap:wrap}
+.stat .v{font-family:var(--ff);font-size:2.6rem;font-weight:700;color:var(--gld);line-height:1}
+.stat .k{font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--crm2);margin-top:.3rem}
+
+/* menu */
+.menu-head{text-align:center;max-width:40rem;margin:0 auto 3rem}
+.menu-cats{display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap;margin-bottom:2.4rem}
+.menu-cat{font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;padding:.5rem 1.1rem;border:1px solid var(--line);
+  color:var(--crm2);cursor:pointer;transition:all .3s;font-weight:600;background:transparent}
+.menu-cat.active,.menu-cat:hover{background:var(--gld);border-color:var(--gld);color:var(--esp)}
+.menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.4rem}
+.dish{display:flex;gap:1rem;padding:1.1rem;border:1px solid var(--line);border-radius:4px;background:rgba(0,0,0,.12);transition:border-color .3s}
+.dish:hover{border-color:var(--line2)}
+.dish-thumb{width:74px;height:74px;flex:none;border-radius:4px;object-fit:cover;background:var(--brn2)}
+.dish-thumb.ph{display:flex;align-items:center;justify-content:center;font-family:var(--ff);color:var(--gld);font-size:1.6rem}
+.dish-main{flex:1;min-width:0}
+.dish-top{display:flex;justify-content:space-between;gap:.6rem;align-items:baseline}
+.dish-name{font-family:var(--ff);font-size:1.22rem;font-weight:600}
+.dish-price{color:var(--gld);font-weight:700;white-space:nowrap;font-size:.92rem}
+.dish-desc{color:var(--crm2);font-size:.82rem;margin-top:.3rem}
+.dish-badge{display:inline-block;margin-top:.4rem;font-size:.56rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--gld);border:1px solid var(--line);padding:.12rem .5rem;border-radius:99px}
+
+/* contact / hours */
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:2rem}
+.card{border:1px solid var(--line);border-radius:4px;padding:1.6rem;background:rgba(0,0,0,.12)}
+.card h3{font-family:var(--ff);font-size:1.4rem;margin-bottom:.6rem;color:var(--gld)}
+.card p,.card a{color:var(--crm2);font-size:.92rem}
+.hours-row{display:flex;justify-content:space-between;padding:.3rem 0;border-bottom:1px dotted var(--line);font-size:.86rem}
+
+footer{padding:3rem 0;text-align:center;border-top:1px solid var(--line);color:var(--crm2);font-size:.8rem}
+footer .nav-brand{font-size:1.3rem;display:inline-block;margin-bottom:.6rem}
+
+/* reservation modal */
+.modal{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:1.2rem;
+  background:rgba(10,5,3,.72);backdrop-filter:blur(4px)}
+.modal.open{display:flex}
+.sheet{width:min(440px,100%);max-height:92vh;overflow:auto;background:var(--brn);border:1px solid var(--line);border-radius:8px;padding:1.8rem}
+.sheet h3{font-family:var(--ff);font-size:1.8rem;margin-bottom:.3rem}
+.sheet .sub{color:var(--crm2);font-size:.84rem;margin-bottom:1.2rem}
+.field{margin-bottom:.9rem}
+.field label{display:block;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--crm2);margin-bottom:.35rem}
+.field input,.field select,.field textarea{width:100%;padding:.7rem .8rem;background:rgba(0,0,0,.25);border:1px solid var(--line);
+  border-radius:4px;color:var(--crm);font-family:var(--fs);font-size:.92rem}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gld)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.x-close{float:right;font-size:1.3rem;color:var(--crm2);cursor:pointer;line-height:1}
+.ok-msg{text-align:center;padding:1.5rem 0}
+.ok-msg .tick{font-size:2.4rem;color:var(--gld)}
+
+/* chatbot */
+.cbot-btn{position:fixed;right:1.4rem;bottom:1.4rem;z-index:90;width:58px;height:58px;border-radius:50%;
+  background:var(--gld);color:var(--esp);border:none;cursor:pointer;font-size:1.5rem;box-shadow:0 10px 26px rgba(0,0,0,.4);
+  display:flex;align-items:center;justify-content:center;transition:transform .25s var(--ease)}
+.cbot-btn:hover{transform:scale(1.07)}
+.cbot{position:fixed;right:1.4rem;bottom:5.6rem;z-index:91;width:min(340px,calc(100vw - 2rem));
+  background:var(--brn);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:none;flex-direction:column;
+  box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.cbot.open{display:flex}
+.cbot-hd{background:var(--brn2);padding:.9rem 1rem;display:flex;align-items:center;gap:.6rem;border-bottom:1px solid var(--line)}
+.cbot-hd .dot{width:9px;height:9px;border-radius:50%;background:#5fce7e;box-shadow:0 0 8px #5fce7e}
+.cbot-hd .t{font-family:var(--ff);font-size:1.15rem;font-weight:600}
+.cbot-hd .soon{margin-left:auto;font-size:.5rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gld);
+  border:1px solid var(--line);padding:.12rem .45rem;border-radius:99px}
+.cbot-body{padding:1rem;display:flex;flex-direction:column;gap:.7rem;min-height:160px;max-height:46vh;overflow:auto}
+.msg{max-width:85%;padding:.6rem .8rem;border-radius:12px;font-size:.86rem}
+.msg.bot{background:rgba(0,0,0,.22);border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:3px}
+.msg.me{background:var(--gld);color:var(--esp);align-self:flex-end;border-bottom-right-radius:3px}
+.cbot-foot{display:flex;gap:.5rem;padding:.7rem;border-top:1px solid var(--line)}
+.cbot-foot input{flex:1;padding:.6rem .7rem;background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:99px;color:var(--crm);font-family:var(--fs)}
+.cbot-foot button{background:var(--gld);color:var(--esp);border:none;border-radius:50%;width:38px;height:38px;cursor:pointer;font-size:1rem}
+.cbot-quick{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.2rem}
+.cbot-quick button{font-size:.66rem;border:1px solid var(--line);background:transparent;color:var(--crm2);padding:.35rem .7rem;border-radius:99px;cursor:pointer}
+.cbot-quick button:hover{border-color:var(--gld);color:var(--gld)}
+
+.hidden{display:none!important}
+.toast{position:fixed;left:50%;bottom:1.4rem;transform:translateX(-50%);background:var(--brn2);border:1px solid var(--line);
+  color:var(--crm);padding:.7rem 1.2rem;border-radius:99px;z-index:120;font-size:.85rem;opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <a class="nav-brand" href="#top" id="brand">Home<b>slice</b></a>
+  <button class="nav-burger" onclick="document.getElementById('navlinks').classList.toggle('open')">☰</button>
+  <ul class="nav-links" id="navlinks" style="list-style:none">
+    <a href="#story">Story</a>
+    <a href="#menu">Menu</a>
+    <a href="#visit">Visit</a>
+    <span class="nav-cta" onclick="openReserve()">Reserve</span>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<header class="hero" id="top">
+  <div class="hero-bg" id="hero-bg"></div>
+  <div class="wrap hero-inner">
+    <div class="label hero-tag" id="hero-tag">Eatery &amp; Bistro · Solo</div>
+    <h1 id="hero-title">Home<br/><em>cooking</em><br/>elevated.</h1>
+    <p id="hero-body">Western classics and honest home cooking, served in a warm, low-lit room made for long lunches and longer conversations — in the heart of Surakarta.</p>
+    <div class="hero-cta">
+      <span class="btn btn-solid" onclick="openReserve()" id="hero-cta1">Reserve a table</span>
+      <a class="btn btn-outline" href="#menu" id="hero-cta2">View the menu</a>
+    </div>
+  </div>
+</header>
+
+<!-- STORY -->
+<section class="block sec-brn" id="story">
+  <div class="wrap split">
+    <img id="story-img" alt="Homeslice" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='8' height='8' fill='%234A2A18'/%3E%3C/svg%3E"/>
+    <div>
+      <div class="label" id="story-label">Our story</div>
+      <h2 id="story-title">The comfort of home, <em>without the cooking.</em></h2>
+      <div id="story-body">
+        <p>Homeslice began with a simple idea: the food you crave at home, made properly and served in a room you never want to leave. No pork, no lard — just generous, comforting cooking.</p>
+      </div>
+      <div class="stats" id="story-stats"></div>
+    </div>
+  </div>
+</section>
+
+<!-- MENU -->
+<section class="block" id="menu">
+  <div class="wrap">
+    <div class="menu-head">
+      <div class="label">Homeslice Eatery &amp; Bistro</div>
+      <h2 id="menu-title">Explore <em>everything</em></h2>
+      <p style="color:var(--crm2)" id="menu-sub">From signature steaks to comfort classics — the full menu, fresh from the kitchen.</p>
+    </div>
+    <div class="menu-cats" id="menu-cats"></div>
+    <div class="menu-grid" id="menu-grid">
+      <p style="color:var(--crm2);grid-column:1/-1;text-align:center" id="menu-empty">Loading the menu…</p>
+    </div>
+  </div>
+</section>
+
+<!-- VISIT / CONTACT -->
+<section class="block sec-brn" id="visit">
+  <div class="wrap">
+    <div class="menu-head">
+      <div class="label">Come in</div>
+      <h2>Visit <em>us</em></h2>
+    </div>
+    <div class="cols">
+      <div class="card" id="card-hours">
+        <h3>Hours</h3>
+        <div id="hours-list"><div class="hours-row"><span>Mon – Sun</span><span>10:00 – 22:00</span></div></div>
+      </div>
+      <div class="card">
+        <h3>Find us</h3>
+        <p id="addr">Surakarta (Solo), Central Java</p>
+        <p style="margin-top:.6rem"><a id="phone" href="#">—</a></p>
+      </div>
+      <div class="card">
+        <h3>Reserve</h3>
+        <p>Planning a long lunch or a celebration? Book a table and we’ll have it ready.</p>
+        <span class="btn btn-solid" style="margin-top:1rem" onclick="openReserve()">Reserve a table</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="nav-brand">Home<b>slice</b></div>
+    <p id="foot-tag">Eatery &amp; Bistro · Surakarta · No Pork · No Lard</p>
+    <p style="margin-top:.6rem;opacity:.6">© <span id="year"></span> Homeslice. Powered by Business OS.</p>
+  </div>
+</footer>
+
+<!-- RESERVATION MODAL -->
+<div class="modal" id="reserveModal">
+  <div class="sheet">
+    <span class="x-close" onclick="closeReserve()">✕</span>
+    <div id="reserveForm">
+      <h3 class="serif">Reserve a table</h3>
+      <div class="sub">Send a request and we’ll confirm shortly.</div>
+      <div class="field"><label>Name</label><input id="rName" type="text" placeholder="Your name"/></div>
+      <div class="field"><label>Phone / WhatsApp</label><input id="rPhone" type="tel" placeholder="08…"/></div>
+      <div class="row2">
+        <div class="field"><label>Date</label><input id="rDate" type="date"/></div>
+        <div class="field"><label>Time</label><input id="rTime" type="time" value="19:00"/></div>
+      </div>
+      <div class="field"><label>Party size</label>
+        <select id="rParty"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
+      </div>
+      <div class="field"><label>Note (optional)</label><textarea id="rNote" rows="2" placeholder="Occasion, seating preference…"></textarea></div>
+      <button class="btn btn-solid" style="width:100%" id="rSubmit" onclick="submitReserve()">Request reservation</button>
+      <div id="rErr" style="color:var(--ter2);font-size:.82rem;margin-top:.7rem"></div>
+    </div>
+    <div id="reserveOk" class="ok-msg hidden">
+      <div class="tick">✓</div>
+      <h3 class="serif" style="margin:.4rem 0">Request received</h3>
+      <p style="color:var(--crm2)">Thank you! We’ll confirm your table shortly. See you soon.</p>
+      <button class="btn btn-outline" style="margin-top:1.2rem" onclick="closeReserve()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHATBOT (temporary placeholder, ready to wire a real bot) -->
+<button class="cbot-btn" id="cbotBtn" onclick="toggleChat()" aria-label="Chat">💬</button>
+<div class="cbot" id="cbot">
+  <div class="cbot-hd"><span class="dot"></span><span class="t">Homeslice Assistant</span><span class="soon">Beta</span></div>
+  <div class="cbot-body" id="cbotBody">
+    <div class="msg bot">Hi! 👋 I’m the Homeslice assistant. I can help with the menu, hours, and reservations — full chat is coming soon.</div>
+    <div class="cbot-quick">
+      <button onclick="quick('menu')">See the menu</button>
+      <button onclick="quick('hours')">Opening hours</button>
+      <button onclick="quick('reserve')">Reserve a table</button>
+    </div>
+  </div>
+  <div class="cbot-foot">
+    <input id="cbotInput" type="text" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendChat()"/>
+    <button onclick="sendChat()" aria-label="Send">➤</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ───────── CONFIG: new business-os staging (publishable/anon key — public-safe) ───────── */
+const SUPABASE_URL = 'https://gfekclkhdrqyncmvnjsn.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_xwHcysY4WKoxKLXTN4rqng_JEtWUwU6';
+const REST = SUPABASE_URL.replace(/\/+$/, '') + '/rest/v1';
+const HEAD = { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY };
+
+let BRANCH_ID = null;
+const VARIANT_GROUPS = new Set(['size', 'duration', 'spice_level']);
+
+const $ = (id) => document.getElementById(id);
+const rp = (n) => 'Rp ' + (Number(n) || 0).toLocaleString('id-ID');
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+async function getJSON(path) {
+  const r = await fetch(REST + path, { headers: HEAD });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+
+/* ───────── Theme: website_theme → CSS variables ───────── */
+async function loadTheme() {
+  try {
+    const rows = await getJSON('/website_theme?select=*&limit=1');
+    if (!rows.length) return;
+    const t = rows[0], rootStyle = document.documentElement.style;
+    const map = {
+      '--esp': t.color_background, '--brn': t.color_surface, '--brn2': t.color_surface_2,
+      '--gld': t.color_primary, '--gld2': t.color_primary_2, '--crm': t.color_text,
+      '--crm2': t.color_text_muted, '--line': t.color_line, '--ter': t.color_tertiary,
+    };
+    for (const [k, v] of Object.entries(map)) if (v) rootStyle.setProperty(k, v);
+    if (t.heading_font) rootStyle.setProperty('--ff', `'${t.heading_font}', Georgia, serif`);
+    if (t.body_font) rootStyle.setProperty('--fs', `'${t.body_font}', system-ui, sans-serif`);
+    if (t.google_fonts_url) $('gfonts').href = t.google_fonts_url;
+    if (t.extra_tokens && typeof t.extra_tokens === 'object')
+      for (const [k, v] of Object.entries(t.extra_tokens)) if (v) rootStyle.setProperty(k, v);
+  } catch (e) { /* keep default theme */ }
+}
+
+/* ───────── Settings: branch name / address / phone / branch_id ───────── */
+async function loadSettings() {
+  try {
+    const rows = await getJSON('/branch_settings?select=*&limit=1');
+    if (!rows.length) return;
+    const s = rows[0];
+    BRANCH_ID = s.branch_id || null;
+    if (s.business_name) {
+      const parts = s.business_name.split(/\s+/);
+      const html = parts.length > 1
+        ? esc(parts[0]) + '<b>' + esc(parts.slice(1).join(' ')) + '</b>'
+        : '<b>' + esc(s.business_name) + '</b>';
+      document.querySelectorAll('.nav-brand').forEach(el => el.innerHTML = html);
+      document.title = s.business_name + ' — Surakarta';
+    }
+    if (s.address) $('addr').textContent = s.address;
+    if (s.phone) { const p = $('phone'); p.textContent = s.phone; p.href = 'tel:' + s.phone.replace(/\s/g, ''); }
+  } catch (e) {}
+}
+
+/* ───────── Sections: website_sections → hero / story / hours / contact ───────── */
+async function loadSections() {
+  let secs = [];
+  try { secs = await getJSON('/website_sections?select=*&order=sort_order'); } catch (e) {}
+  const by = {};
+  secs.forEach(s => by[s.section_key] = s);
+
+  const hero = by.hero;
+  if (hero) {
+    const c = hero.content || {};
+    if (c.tagline) $('hero-tag').textContent = c.tagline;
+    if (hero.title) $('hero-title').innerHTML = esc(hero.title).replace(/\n/g, '<br/>');
+    if (hero.body) $('hero-body').textContent = hero.body;
+    if (c.cta_label) $('hero-cta1').textContent = c.cta_label;
+    if (hero.image_url) $('hero-bg').innerHTML = `<img alt="" src="${esc(hero.image_url)}"/>`;
+  }
+
+  const story = by.about || by.story;
+  if (story) {
+    if (story.title) $('story-title').innerHTML = esc(story.title).replace(/\n/g, '<br/>');
+    if (story.body) $('story-body').innerHTML = '<p>' + esc(story.body).replace(/\n\n/g, '</p><p>') + '</p>';
+    if (story.image_url) $('story-img').src = story.image_url;
+    const c = story.content || {};
+    const stats = Object.keys(c).filter(k => /^stat/.test(k));
+    if (stats.length) {
+      $('story-stats').innerHTML = stats.map(k => {
+        const [v, ...rest] = String(c[k]).split('|');
+        return `<div class="stat"><div class="v">${esc(v)}</div><div class="k">${esc(rest.join('|'))}</div></div>`;
+      }).join('');
+    }
+  }
+
+  const hours = by.hours;
+  if (hours && hours.content && Object.keys(hours.content).length) {
+    $('hours-list').innerHTML = Object.entries(hours.content)
+      .map(([d, h]) => `<div class="hours-row"><span>${esc(d)}</span><span>${esc(h)}</span></div>`).join('');
+  }
+  const contact = by.contact;
+  if (contact && contact.body) $('addr').textContent = contact.body;
+}
+
+/* ───────── Menu: catalog_items + categories + options ───────── */
+let MENU = {};
+async function loadMenu() {
+  let items = [], cats = [];
+  try {
+    [items, cats] = await Promise.all([
+      getJSON('/catalog_items?select=id,name,price,category_id,photo_url,is_active,metadata,catalog_item_options(name,option_group,price_delta)&is_active=eq.true'),
+      getJSON('/categories?select=id,name,sort_order&order=sort_order'),
+    ]);
+  } catch (e) {
+    $('menu-empty').textContent = 'Menu unavailable right now.';
+    return;
+  }
+  const catName = {}; cats.forEach(c => catName[c.id] = c.name);
+  MENU = {};
+  const order = [];
+  items.forEach(it => {
+    const cat = catName[it.category_id] || 'Menu';
+    if (!MENU[cat]) { MENU[cat] = []; order.push(cat); }
+    MENU[cat].push(it);
+  });
+  const catsOrdered = cats.map(c => c.name).filter(n => MENU[n]).concat(order.filter(c => !cats.some(x => x.name === c)));
+  const uniq = [...new Set(catsOrdered)];
+
+  if (!uniq.length) { $('menu-empty').textContent = 'Menu coming soon.'; return; }
+  $('menu-cats').innerHTML = `<button class="menu-cat active" onclick="renderMenu('__all__',this)">All</button>` +
+    uniq.map(c => `<button class="menu-cat" onclick="renderMenu('${esc(c).replace(/'/g, "\\'")}',this)">${esc(c)}</button>`).join('');
+  renderMenu('__all__');
+}
+
+function priceLabel(it) {
+  const base = Number(it.price) || 0;
+  const variants = (it.catalog_item_options || []).filter(o => VARIANT_GROUPS.has(o.option_group));
+  if (variants.length) {
+    const min = Math.min(...variants.map(v => base + (Number(v.price_delta) || 0)));
+    return 'from ' + rp(min);
+  }
+  return base > 0 ? rp(base) : 'Ask server';
+}
+
+function renderMenu(cat, btn) {
+  if (btn) { document.querySelectorAll('.menu-cat').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+  const cats = cat === '__all__' ? Object.keys(MENU) : [cat];
+  let html = '';
+  cats.forEach(c => {
+    (MENU[c] || []).forEach(it => {
+      const desc = (it.metadata && it.metadata.description) ? it.metadata.description : '';
+      const initial = (it.name || '?').trim().charAt(0).toUpperCase();
+      const thumb = it.photo_url
+        ? `<img class="dish-thumb" loading="lazy" alt="" src="${esc(it.photo_url)}"/>`
+        : `<div class="dish-thumb ph">${esc(initial)}</div>`;
+      const bundle = it.metadata && it.metadata.is_bundle ? '<span class="dish-badge">Paket</span>' : '';
+      html += `<div class="dish">${thumb}<div class="dish-main">
+        <div class="dish-top"><div class="dish-name">${esc(it.name)}</div><div class="dish-price">${priceLabel(it)}</div></div>
+        ${desc ? `<div class="dish-desc">${esc(desc)}</div>` : ''}${bundle}
+      </div></div>`;
+    });
+  });
+  $('menu-grid').innerHTML = html || '<p style="color:var(--crm2);grid-column:1/-1;text-align:center">Nothing here yet.</p>';
+}
+
+/* ───────── Reservation → create_public_booking (feeds the POS Incoming bell) ───────── */
+function openReserve() { $('reserveModal').classList.add('open'); $('reserveForm').classList.remove('hidden'); $('reserveOk').classList.add('hidden'); if (!$('rDate').value) $('rDate').value = new Date().toISOString().slice(0, 10); }
+function closeReserve() { $('reserveModal').classList.remove('open'); }
+async function submitReserve() {
+  const name = $('rName').value.trim(), phone = $('rPhone').value.trim();
+  const date = $('rDate').value, time = $('rTime').value, party = $('rParty').value, note = $('rNote').value.trim();
+  const err = $('rErr'); err.textContent = '';
+  if (!name) { err.textContent = 'Please enter your name.'; return; }
+  if (!date || !time) { err.textContent = 'Please pick a date and time.'; return; }
+  if (!BRANCH_ID) { err.textContent = 'Reservations are temporarily unavailable.'; return; }
+  const start = new Date(date + 'T' + time);
+  const end = new Date(start.getTime() + 90 * 60000);
+  const btn = $('rSubmit'); btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    const r = await fetch(REST + '/rpc/create_public_booking', {
+      method: 'POST', headers: { ...HEAD, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_payload: {
+        branch_id: BRANCH_ID, customer_name: name, customer_phone: phone,
+        start_time: start.toISOString(), end_time: end.toISOString(),
+        resource_ref: party + ' pax' + (note ? ' · ' + note : ''),
+      }})
+    });
+    if (!r.ok) throw new Error(await r.text());
+    $('reserveForm').classList.add('hidden'); $('reserveOk').classList.remove('hidden');
+  } catch (e) {
+    err.textContent = 'Could not send — please try again or contact us directly.';
+    btn.disabled = false; btn.textContent = 'Request reservation';
+  }
+}
+
+/* ───────── Chatbot (placeholder; quick-actions work, free chat coming soon) ───────── */
+function toggleChat() { $('cbot').classList.toggle('open'); }
+function botSay(t) { const d = document.createElement('div'); d.className = 'msg bot'; d.textContent = t; $('cbotBody').appendChild(d); $('cbotBody').scrollTop = 1e9; }
+function meSay(t) { const d = document.createElement('div'); d.className = 'msg me'; d.textContent = t; $('cbotBody').appendChild(d); $('cbotBody').scrollTop = 1e9; }
+function quick(kind) {
+  if (kind === 'menu') { meSay('Show me the menu'); botSay('Here’s our menu 👇'); closeChatScrollTo('#menu'); }
+  else if (kind === 'hours') { meSay('What are your hours?'); const h = $('hours-list').textContent.replace(/\s+/g, ' ').trim(); botSay(h || 'We’re open daily 10:00 – 22:00.'); }
+  else if (kind === 'reserve') { meSay('I’d like to reserve'); botSay('Opening the reservation form for you…'); setTimeout(openReserve, 500); }
+}
+function closeChatScrollTo(sel) { document.querySelector(sel).scrollIntoView({ behavior: 'smooth' }); }
+function sendChat() {
+  const i = $('cbotInput'), v = i.value.trim(); if (!v) return;
+  meSay(v); i.value = '';
+  setTimeout(() => botSay('Thanks! Full chat is coming soon. For now, try the buttons above, or tap Reserve to book a table.'), 350);
+}
+
+/* ───────── boot ───────── */
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2200); }
+window.addEventListener('scroll', () => { document.getElementById('nav').classList.toggle('solid', window.scrollY > 40); });
+document.addEventListener('click', e => { if (e.target.closest('.nav-links a')) document.getElementById('navlinks').classList.remove('open'); });
+$('year').textContent = new Date().getFullYear();
+loadTheme(); loadSettings(); loadSections(); loadMenu();
+</script>
+</body>
+</html>
