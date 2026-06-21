@@ -32,6 +32,7 @@ a{color:inherit;text-decoration:none}
   cursor:pointer;font-weight:600;font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;transition:all .3s}
 .tab.on{background:var(--gld);border-color:var(--gld);color:var(--esp)}
 .hidden{display:none!important}
+.hp{position:absolute!important;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none}
 .cfgwarn{margin:1rem 1.2rem;padding:.8rem 1rem;border:1px solid var(--ter);border-radius:6px;color:#f0c0ad;font-size:.85rem}
 
 .cats{display:flex;gap:.5rem;overflow-x:auto;padding:1rem 1.2rem .4rem;-webkit-overflow-scrolling:touch}
@@ -148,6 +149,7 @@ a{color:inherit;text-decoration:none}
         <select id="rParty"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
       </div>
       <div class="field"><label>Note (optional)</label><textarea id="rNote" rows="2" placeholder="Occasion, seating preference…"></textarea></div>
+      <input class="hp" id="hp_reserve" name="url" tabindex="-1" autocomplete="off" aria-hidden="true"/>
       <button class="btn" id="rSubmit" onclick="submitReservation()">Request reservation</button>
     </div>
     <div id="reserveOk" class="ok-msg hidden">
@@ -180,6 +182,7 @@ a{color:inherit;text-decoration:none}
     <div class="field"><label>Name</label><input id="cName" type="text" placeholder="Your name"/></div>
     <div class="field"><label>Phone / WhatsApp</label><input id="cPhone" type="tel" placeholder="08…"/></div>
     <div class="field"><label>Note (optional)</label><textarea id="cNote" rows="2" placeholder="Less spicy, no onion…"></textarea></div>
+    <input class="hp" id="hp_order" name="url" tabindex="-1" autocomplete="off" aria-hidden="true"/>
     <button class="btn" id="placeBtn" onclick="placeOrder()">Place order</button>
   </div>
   <div id="orderOk" class="ok-msg hidden">
@@ -317,7 +320,7 @@ async function placeOrder(){
   const items=[...cart.values()].map(e=>({catalog_item_id:e.catalog_item_id, option_id:e.option_id, qty:e.qty}));
   const t=calcTotals();
   try{
-    const id=await rpc('create_public_order',{branch_id:BRANCH_ID,customer_name:name,customer_phone:phone,order_type:orderType,note:$('cNote').value.trim(),items});
+    const id=await rpc('create_public_order',{branch_id:BRANCH_ID,customer_name:name,customer_phone:phone,order_type:orderType,note:$('cNote').value.trim(),items,hp:$('hp_order').value});
     $('orderCode').textContent='Order '+code(id);
     $('orderPay').innerHTML=payPanelHTML('order',id,t.deposit);
     $('checkout').classList.add('hidden'); $('orderOk').classList.remove('hidden');
@@ -339,7 +342,7 @@ async function submitReservation(){
   try{
     const id=await rpc('create_public_booking',{branch_id:BRANCH_ID,customer_name:name,customer_phone:$('rPhone').value.trim(),
       party_size:party,note:$('rNote').value.trim(),deposit,start_time:start.toISOString(),end_time:end.toISOString(),
-      resource_ref:party+' pax'+($('rNote').value.trim()?' · '+$('rNote').value.trim():'')});
+      resource_ref:party+' pax'+($('rNote').value.trim()?' · '+$('rNote').value.trim():''),hp:$('hp_reserve').value});
     $('reserveCode').textContent='Reservation '+code(id);
     $('resPay').innerHTML=payPanelHTML('reservation',id,deposit);
     $('reserveForm').classList.add('hidden'); $('reserveOk').classList.remove('hidden');

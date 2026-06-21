@@ -153,6 +153,7 @@ footer .nav-brand{font-size:1.3rem;display:inline-block;margin-bottom:.6rem}
 .cbot-quick button{font-size:.66rem;border:1px solid var(--line);background:transparent;color:var(--crm2);padding:.35rem .7rem;border-radius:99px;cursor:pointer}
 .cbot-quick button:hover{border-color:var(--gld);color:var(--gld)}
 
+.hp{position:absolute!important;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none}
 .hidden{display:none!important}
 .toast{position:fixed;left:50%;bottom:1.4rem;transform:translateX(-50%);background:var(--brn2);border:1px solid var(--line);
   color:var(--crm);padding:.7rem 1.2rem;border-radius:99px;z-index:120;font-size:.85rem;opacity:0;transition:opacity .3s}
@@ -269,6 +270,7 @@ footer .nav-brand{font-size:1.3rem;display:inline-block;margin-bottom:.6rem}
         <select id="rParty"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
       </div>
       <div class="field"><label>Note (optional)</label><textarea id="rNote" rows="2" placeholder="Occasion, seating preference…"></textarea></div>
+      <input class="hp" id="hp_res" name="url" tabindex="-1" autocomplete="off" aria-hidden="true"/>
       <button class="btn btn-solid" style="width:100%" id="rSubmit" onclick="submitReserve()">Request reservation</button>
       <div id="rErr" style="color:var(--ter2);font-size:.82rem;margin-top:.7rem"></div>
     </div>
@@ -481,8 +483,10 @@ async function submitReserve() {
       method: 'POST', headers: { ...HEAD, 'Content-Type': 'application/json' },
       body: JSON.stringify({ p_payload: {
         branch_id: BRANCH_ID, customer_name: name, customer_phone: phone,
+        party_size: party, note: note, deposit: 50000 * (parseInt(party, 10) || 2),
         start_time: start.toISOString(), end_time: end.toISOString(),
         resource_ref: party + ' pax' + (note ? ' · ' + note : ''),
+        hp: $('hp_res').value,
       }})
     });
     if (!r.ok) throw new Error(await r.text());
