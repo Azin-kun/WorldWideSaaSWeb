@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Order &amp; Reserve — Homeslice</title>
+<meta name="description" content="Order online or reserve a table at Homeslice Eatery & Bistro, Surakarta."/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link id="gfonts" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,300;1,400&amp;family=Montserrat:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --esp:#160A06;--brn:#2C1810;--brn2:#4A2A18;
+  --gld:#C9934A;--gld2:#E1B66C;--crm:#FAF6EF;--crm2:#F2E8D8;
+  --line:rgba(201,147,74,.28);--line2:rgba(201,147,74,.5);--ter:#B65C3A;
+  --ff:'Cormorant Garamond',Georgia,serif;--fs:'Montserrat',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{background:var(--esp);color:var(--crm);font-family:var(--fs);line-height:1.55;overflow-x:hidden;padding-bottom:84px}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1000px;margin:0 auto;padding:0 1.2rem}
+.serif{font-family:var(--ff)}
+.top{position:sticky;top:0;z-index:30;background:rgba(22,10,6,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;padding:.8rem 1.2rem}
+.brand{font-family:var(--ff);font-size:1.35rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.brand b{color:var(--gld)}
+.back{font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--crm2)}
+.back:hover{color:var(--gld)}
+.tabs{display:flex;gap:.5rem;max-width:1000px;margin:1.2rem auto .4rem;padding:0 1.2rem}
+.tab{flex:1;text-align:center;padding:.8rem;border:1px solid var(--line);background:transparent;color:var(--crm2);
+  cursor:pointer;font-weight:600;font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;transition:all .3s}
+.tab.on{background:var(--gld);border-color:var(--gld);color:var(--esp)}
+.hidden{display:none!important}
+.cfgwarn{margin:1rem 1.2rem;padding:.8rem 1rem;border:1px solid var(--ter);border-radius:6px;color:#f0c0ad;font-size:.85rem}
+
+.cats{display:flex;gap:.5rem;overflow-x:auto;padding:1rem 1.2rem .4rem;-webkit-overflow-scrolling:touch}
+.chip{flex:none;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;padding:.5rem .9rem;border:1px solid var(--line);
+  color:var(--crm2);cursor:pointer;font-weight:600;white-space:nowrap;transition:all .25s}
+.chip.on,.chip:hover{background:var(--gld);border-color:var(--gld);color:var(--esp)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
+.card{border:1px solid var(--line);border-radius:6px;overflow:hidden;background:rgba(0,0,0,.14);display:flex;flex-direction:column}
+.ph{height:120px;background:var(--brn2) center/cover no-repeat;display:flex;align-items:center;justify-content:center;
+  font-family:var(--ff);color:var(--gld);font-size:2rem}
+.bd{padding:.85rem;display:flex;flex-direction:column;gap:.25rem;flex:1}
+.badge{align-self:flex-start;font-size:.54rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gld);border:1px solid var(--line);padding:.1rem .45rem;border-radius:99px}
+.nm{font-family:var(--ff);font-size:1.18rem;font-weight:600;line-height:1.1}
+.ds{color:var(--crm2);font-size:.78rem;min-height:1em}
+.rw{display:flex;align-items:center;justify-content:space-between;margin-top:.3rem}
+.price{color:var(--gld);font-weight:700;font-size:.9rem}
+.add{background:var(--gld);color:var(--esp);border:none;padding:.4rem .9rem;font-weight:700;font-size:.7rem;letter-spacing:.08em;
+  text-transform:uppercase;cursor:pointer;border-radius:4px}
+.vars{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem}
+.vbtn{display:flex;gap:.4rem;align-items:center;background:transparent;border:1px solid var(--line);color:var(--crm);
+  padding:.35rem .6rem;border-radius:4px;cursor:pointer;font-family:var(--fs);font-size:.74rem}
+.vbtn b{color:var(--gld)}
+.vbtn:hover{border-color:var(--gld)}
+.empty{padding:2rem;text-align:center;color:var(--crm2)}
+
+/* forms */
+.form{max-width:520px;margin:0 auto;padding:1.2rem}
+.field{margin-bottom:.85rem}
+.field label{display:block;font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--crm2);margin-bottom:.3rem}
+.field input,.field select,.field textarea{width:100%;padding:.7rem .8rem;background:rgba(0,0,0,.25);border:1px solid var(--line);
+  border-radius:4px;color:var(--crm);font-family:var(--fs);font-size:.92rem}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gld)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+.seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-bottom:.85rem}
+.seg .opt{flex:1;text-align:center;padding:.65rem;cursor:pointer;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--crm2)}
+.seg .opt.on{background:var(--gld);color:var(--esp)}
+.btn{display:block;width:100%;text-align:center;background:var(--gld);color:var(--esp);border:none;padding:.95rem;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;font-size:.72rem;cursor:pointer;border-radius:4px}
+.btn[disabled]{opacity:.6;cursor:default}
+
+/* cart bar + sheet */
+.cartbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:none;align-items:center;justify-content:space-between;
+  background:var(--gld);color:var(--esp);padding:.9rem 1.2rem;cursor:pointer;font-weight:700}
+.cartbar.show{display:flex}
+.cartbar .c{display:flex;align-items:center;gap:.6rem}
+.cnt{background:var(--esp);color:var(--gld);border-radius:99px;min-width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem}
+.overlay{position:fixed;inset:0;background:rgba(8,4,2,.66);z-index:50;display:none}
+.overlay.show{display:block}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:51;background:var(--brn);border-top:1px solid var(--line);
+  border-radius:14px 14px 0 0;max-height:90vh;overflow:auto;transform:translateY(100%);transition:transform .3s;padding:1.2rem}
+.sheet.show{transform:translateY(0)}
+.sheet h3{font-family:var(--ff);font-size:1.7rem;margin-bottom:.6rem}
+.line{display:grid;grid-template-columns:1fr auto auto;gap:.6rem;align-items:center;padding:.5rem 0;border-bottom:1px dotted var(--line)}
+.qtybox{display:flex;align-items:center;gap:.5rem}
+.qb{width:26px;height:26px;border:1px solid var(--line);background:transparent;color:var(--crm);border-radius:50%;cursor:pointer;font-size:1rem}
+.ltot{color:var(--gld);font-weight:700;min-width:78px;text-align:right}
+.sumrows{margin:.8rem 0}
+.srow{display:flex;justify-content:space-between;color:var(--crm2);font-size:.86rem;padding:.15rem 0}
+.cototal{display:flex;justify-content:space-between;font-weight:800;font-size:1.1rem;margin:.6rem 0;padding-top:.6rem;border-top:1px solid var(--line)}
+.x-close{float:right;font-size:1.3rem;color:var(--crm2);cursor:pointer}
+
+/* deposit panel */
+.depbox{border:1px solid var(--line);border-radius:8px;padding:1.1rem;margin-top:1rem;background:rgba(0,0,0,.16)}
+.dephead{font-size:.78rem;color:var(--crm2);text-transform:uppercase;letter-spacing:.1em}
+.depamt{font-family:var(--ff);font-size:2rem;font-weight:700;color:var(--gld);margin:.2rem 0 .8rem}
+.bankrow{display:flex;justify-content:space-between;align-items:center;gap:1rem;border:1px dashed var(--line);border-radius:6px;padding:.7rem .9rem}
+.bk{font-size:.82rem}.acc{font-family:var(--ff);font-size:1.3rem;color:var(--gld);letter-spacing:.04em}
+.copy{background:transparent;border:1px solid var(--gld);color:var(--gld);padding:.4rem .8rem;border-radius:4px;cursor:pointer;font-size:.7rem;text-transform:uppercase;letter-spacing:.1em}
+.depnote{font-size:.82rem;color:var(--crm2);margin:.9rem 0 .5rem}
+.waBtn{display:block;text-align:center;background:#25D366;color:#04210f;font-weight:700;padding:.7rem;border-radius:6px;margin-bottom:.6rem;font-size:.82rem}
+.upBtn{display:block;text-align:center;border:1px solid var(--line);color:var(--crm);padding:.7rem;border-radius:6px;cursor:pointer;font-size:.82rem}
+.upstat{font-size:.82rem;margin-top:.6rem;color:var(--crm2)}.upstat.ok2{color:#7fe0a0}
+.ok-msg{text-align:center;padding:1rem 0}.ok-msg .tick{font-size:2.4rem;color:var(--gld)}
+.codeline{font-family:var(--ff);font-size:1.4rem;color:var(--gld);margin:.3rem 0}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--brn2);border:1px solid var(--line);
+  color:var(--crm);padding:.7rem 1.2rem;border-radius:99px;z-index:120;font-size:.85rem;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <a class="brand" href="index.html">Home<b>slice</b></a>
+  <a class="back" href="index.html">← Back to site</a>
+</div>
+
+<div id="cfgwarn" class="cfgwarn hidden">⚠ Online ordering is temporarily unavailable.</div>
+
+<div class="tabs">
+  <button class="tab on" id="tabOrder" onclick="switchTab('order')">Order online</button>
+  <button class="tab" id="tabReserve" onclick="switchTab('reserve')">Reserve a table</button>
+</div>
+
+<!-- ORDER -->
+<div id="paneOrder">
+  <div class="cats" id="cats"></div>
+  <div class="wrap"><div id="menu"><div class="empty">Loading the menu…</div></div></div>
+</div>
+
+<!-- RESERVE -->
+<div id="paneReserve" class="hidden">
+  <div class="form">
+    <div id="reserveForm">
+      <h2 class="serif" style="font-size:1.9rem;margin-bottom:.2rem">Reserve a table</h2>
+      <p style="color:var(--crm2);font-size:.86rem;margin-bottom:1rem">Send a request and we’ll confirm shortly.</p>
+      <div class="field"><label>Name</label><input id="rName" type="text" placeholder="Your name"/></div>
+      <div class="field"><label>Phone / WhatsApp</label><input id="rPhone" type="tel" placeholder="08…"/></div>
+      <div class="row2">
+        <div class="field"><label>Date</label><input id="rDate" type="date"/></div>
+        <div class="field"><label>Time</label><input id="rTime" type="time" value="19:00"/></div>
+      </div>
+      <div class="field"><label>Party size</label>
+        <select id="rParty"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
+      </div>
+      <div class="field"><label>Note (optional)</label><textarea id="rNote" rows="2" placeholder="Occasion, seating preference…"></textarea></div>
+      <button class="btn" id="rSubmit" onclick="submitReservation()">Request reservation</button>
+    </div>
+    <div id="reserveOk" class="ok-msg hidden">
+      <div class="tick">✓</div>
+      <div class="codeline" id="reserveCode">Reservation</div>
+      <p style="color:var(--crm2)">Thank you! To hold your table, please send a deposit below.</p>
+      <div id="resPay"></div>
+      <button class="btn" style="margin-top:1rem;background:transparent;border:1px solid var(--line);color:var(--crm)" onclick="resetReserve()">New reservation</button>
+    </div>
+  </div>
+</div>
+
+<!-- cart bar -->
+<div class="cartbar" id="cartbar" onclick="openCart()">
+  <span class="c"><span class="cnt" id="cartCount">0</span> View cart</span>
+  <span id="cartTotal">Rp 0</span>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeCart()"></div>
+<div class="sheet" id="sheet">
+  <span class="x-close" onclick="closeCart()">✕</span>
+  <div id="checkout">
+    <h3 class="serif">Your order</h3>
+    <div id="cartLines"></div>
+    <div class="cototal"><span>Total</span><span id="coTotal">Rp 0</span></div>
+    <div class="seg" id="typeSeg">
+      <div class="opt on" data-type="takeaway" onclick="setType(this)">Takeaway</div>
+      <div class="opt" data-type="dine_in" onclick="setType(this)">Dine-in</div>
+    </div>
+    <div class="field"><label>Name</label><input id="cName" type="text" placeholder="Your name"/></div>
+    <div class="field"><label>Phone / WhatsApp</label><input id="cPhone" type="tel" placeholder="08…"/></div>
+    <div class="field"><label>Note (optional)</label><textarea id="cNote" rows="2" placeholder="Less spicy, no onion…"></textarea></div>
+    <button class="btn" id="placeBtn" onclick="placeOrder()">Place order</button>
+  </div>
+  <div id="orderOk" class="ok-msg hidden">
+    <div class="tick">✓</div>
+    <div class="codeline" id="orderCode">Order</div>
+    <p style="color:var(--crm2)">Thank you! To confirm, please send a deposit below.</p>
+    <div id="orderPay"></div>
+    <button class="btn" style="margin-top:1rem;background:transparent;border:1px solid var(--line);color:var(--crm)" onclick="resetOrder()">New order</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ───── CONFIG: business-os staging (publishable/anon key — public-safe) ───── */
+const SUPABASE_URL = 'https://gfekclkhdrqyncmvnjsn.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_xwHcysY4WKoxKLXTN4rqng_JEtWUwU6';
+/* Deposit payment details shown on confirmation. */
+const BANK = { bank:'Bank BRI', acc:'215301888333567', holder:'Yosef Aria Yudo' };
+const WA = '6287819442998';
+/* ──────────────────────────────────────────────────────────────────────────── */
+
+const REST = SUPABASE_URL.replace(/\/+$/, '') + '/rest/v1';
+const STORAGE = SUPABASE_URL.replace(/\/+$/, '') + '/storage/v1';
+const HEAD = { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY };
+const VARIANT_GROUPS = new Set(['size','duration','spice_level']);
+const $ = id => document.getElementById(id);
+const fmt = n => 'Rp ' + (Number(n)||0).toLocaleString('id-ID');
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const code = id => String(id).replace(/-/g,'').slice(0,6).toUpperCase();
+
+let BRANCH_ID=null, taxPct=0, svcPct=0, allItems=[], activeCat=null, orderType='takeaway';
+const cart = new Map(); // "itemId:optId" -> {catalog_item_id, option_id, name, variant_name, price, qty}
+
+async function getJSON(path){ const r=await fetch(REST+path,{headers:HEAD}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
+async function rpc(fn, payload){
+  const r = await fetch(REST+'/rpc/'+fn,{method:'POST',headers:{...HEAD,'Content-Type':'application/json'},body:JSON.stringify({p_payload:payload})});
+  if(!r.ok) throw new Error('HTTP '+r.status+' '+await r.text());
+  return r.json();
+}
+
+function switchTab(t){
+  const o=t==='order';
+  $('tabOrder').classList.toggle('on',o); $('tabReserve').classList.toggle('on',!o);
+  $('paneOrder').classList.toggle('hidden',!o); $('paneReserve').classList.toggle('hidden',o);
+  $('cartbar').classList.toggle('show', o && cart.size>0);
+}
+
+/* ---------- menu ---------- */
+async function loadMenu(){
+  try{
+    const [items, cats, settings] = await Promise.all([
+      getJSON('/catalog_items?select=id,name,price,category_id,photo_url,is_active,metadata,catalog_item_options(id,name,option_group,price_delta)&is_active=eq.true'),
+      getJSON('/categories?select=id,name,sort_order&order=sort_order'),
+      getJSON('/branch_settings?select=default_tax_pct,default_service_pct,branch_id&limit=1'),
+    ]);
+    const s = settings[0]||{}; taxPct=+s.default_tax_pct||0; svcPct=+s.default_service_pct||0; BRANCH_ID=s.branch_id||null;
+    const catName={}; cats.forEach(c=>catName[c.id]=c.name);
+    allItems = items.map(i=>{
+      const variants=(i.catalog_item_options||[]).filter(o=>VARIANT_GROUPS.has(o.option_group))
+        .map(o=>({id:o.id,name:o.name,price:(Number(i.price)||0)+(Number(o.price_delta)||0)}));
+      return {id:i.id,name:i.name,price:Number(i.price)||0,category:catName[i.category_id]||'Menu',
+        desc:(i.metadata&&i.metadata.description)||'',photo:i.photo_url||'',variants};
+    }).filter(i=>i.price>0||i.variants.length>0);
+    buildCats(); renderMenu();
+  }catch(e){ $('menu').innerHTML='<div class="empty">Could not load the menu. Please try again.</div>'; }
+}
+function buildCats(){
+  const cats=[...new Set(allItems.map(i=>i.category).filter(Boolean))];
+  $('cats').innerHTML='<div class="chip on" data-cat="" onclick="pickCat(this)">All</div>'+
+    cats.map(c=>`<div class="chip" data-cat="${esc(c)}" onclick="pickCat(this)">${esc(c)}</div>`).join('');
+}
+function pickCat(el){ activeCat=el.dataset.cat||null; document.querySelectorAll('#cats .chip').forEach(c=>c.classList.toggle('on',c===el)); renderMenu(); }
+function renderMenu(){
+  const items=allItems.filter(i=>!activeCat||i.category===activeCat);
+  $('menu').innerHTML = items.length ? '<div class="grid">'+items.map(cardHTML).join('')+'</div>' : '<div class="empty">No items here yet.</div>';
+}
+function cardHTML(i){
+  const img=i.photo?`style="background-image:url('${esc(i.photo)}')"`:'';
+  const initial=(i.name||'?').trim().charAt(0).toUpperCase();
+  const hasV=i.variants.length>0;
+  let priceTxt, below='';
+  if(hasV){
+    priceTxt='from '+fmt(Math.min(...i.variants.map(v=>v.price)));
+    below='<div class="vars">'+i.variants.map(v=>`<button class="vbtn" onclick="addToCart('${i.id}','${v.id}')"><span>${esc(v.name)}</span><b>${fmt(v.price)}</b></button>`).join('')+'</div>';
+  } else priceTxt=fmt(i.price);
+  const addBtn=hasV?'':`<button class="add" onclick="addToCart('${i.id}')">Add</button>`;
+  return `<div class="card"><div class="ph" ${img}>${i.photo?'':initial}</div>
+    <div class="bd"><div class="nm">${esc(i.name)}</div>
+      <div class="ds">${esc(i.desc)}</div>
+      <div class="rw"><span class="price">${priceTxt}</span>${addBtn}</div>${below}</div></div>`;
+}
+
+/* ---------- cart ---------- */
+const keyOf=(id,opt)=>id+':'+(opt||'');
+function addToCart(id, optId){
+  const item=allItems.find(i=>i.id===id); if(!item) return;
+  let name=item.name, price=item.price, vname=null; const oid=optId||null;
+  if(oid){ const v=item.variants.find(x=>x.id===oid); if(!v) return; vname=v.name; price=v.price; }
+  if(!(price>0)) return;
+  const key=keyOf(id,oid);
+  const e=cart.get(key)||{catalog_item_id:id,option_id:oid,name,variant_name:vname,price,qty:0};
+  e.qty++; cart.set(key,e); updateCartBar();
+  toast((vname?name+' ('+vname+')':name)+' added');
+}
+function changeQty(key,d){ const e=cart.get(key); if(!e) return; e.qty+=d; if(e.qty<=0) cart.delete(key); updateCartBar(); renderCart(); if(cart.size===0) closeCart(); }
+function cartCount(){ let n=0; cart.forEach(e=>n+=e.qty); return n; }
+function calcTotals(){ let sub=0; cart.forEach(e=>sub+=e.price*e.qty); const svc=Math.round(sub*svcPct/100); const tax=Math.round((sub+svc)*taxPct/100); const total=sub+svc+tax; return {sub,svc,tax,total,deposit:Math.round(total/2)}; }
+function updateCartBar(){ const n=cartCount(); $('cartCount').textContent=n; $('cartTotal').textContent=fmt(calcTotals().total); $('cartbar').classList.toggle('show', n>0 && !$('paneOrder').classList.contains('hidden')); }
+function renderCart(){
+  const el=$('cartLines');
+  if(cart.size===0){ el.innerHTML='<div class="empty">Your cart is empty.</div>'; }
+  else{
+    let html=''; cart.forEach((e,key)=>{ const label=e.variant_name?`${e.name} · ${e.variant_name}`:e.name;
+      html+=`<div class="line"><span>${esc(label)}</span><span class="qtybox"><button class="qb" onclick="changeQty('${key}',-1)">−</button><span>${e.qty}</span><button class="qb" onclick="changeQty('${key}',1)">+</button></span><span class="ltot">${fmt(e.price*e.qty)}</span></div>`; });
+    const t=calcTotals();
+    html+='<div class="sumrows">'+`<div class="srow"><span>Subtotal</span><span>${fmt(t.sub)}</span></div>`+
+      (svcPct?`<div class="srow"><span>Service (${svcPct}%)</span><span>${fmt(t.svc)}</span></div>`:'')+
+      (taxPct?`<div class="srow"><span>Tax / PB1 (${taxPct}%)</span><span>${fmt(t.tax)}</span></div>`:'')+'</div>';
+    el.innerHTML=html;
+  }
+  $('coTotal').textContent=fmt(calcTotals().total);
+}
+function openCart(){ if(cart.size===0) return; renderCart(); $('overlay').classList.add('show'); $('sheet').classList.add('show'); }
+function closeCart(){ $('overlay').classList.remove('show'); $('sheet').classList.remove('show'); }
+function setType(el){ orderType=el.dataset.type; document.querySelectorAll('#typeSeg .opt').forEach(o=>o.classList.toggle('on',o===el)); }
+
+async function placeOrder(){
+  const name=$('cName').value.trim(), phone=$('cPhone').value.trim();
+  if(cart.size===0) return toast('Your cart is empty');
+  if(!name) return toast('Please enter your name');
+  if(!phone) return toast('Please enter your phone');
+  if(!BRANCH_ID) return toast('Ordering is temporarily unavailable');
+  const btn=$('placeBtn'); btn.disabled=true; btn.textContent='Placing…';
+  const items=[...cart.values()].map(e=>({catalog_item_id:e.catalog_item_id, option_id:e.option_id, qty:e.qty}));
+  const t=calcTotals();
+  try{
+    const id=await rpc('create_public_order',{branch_id:BRANCH_ID,customer_name:name,customer_phone:phone,order_type:orderType,note:$('cNote').value.trim(),items});
+    $('orderCode').textContent='Order '+code(id);
+    $('orderPay').innerHTML=payPanelHTML('order',id,t.deposit);
+    $('checkout').classList.add('hidden'); $('orderOk').classList.remove('hidden');
+    cart.clear(); updateCartBar();
+  }catch(e){ toast('Could not place order. Please try again.'); btn.disabled=false; btn.textContent='Place order'; }
+}
+function resetOrder(){ $('orderOk').classList.add('hidden'); $('checkout').classList.remove('hidden'); const b=$('placeBtn'); b.disabled=false; b.textContent='Place order'; ['cName','cPhone','cNote'].forEach(id=>$(id).value=''); closeCart(); }
+
+/* ---------- reservation ---------- */
+async function submitReservation(){
+  const name=$('rName').value.trim(); if(!name) return toast('Please enter your name');
+  if(!BRANCH_ID) return toast('Reservations are temporarily unavailable');
+  const date=$('rDate').value, time=$('rTime').value||'19:00';
+  if(!date) return toast('Please pick a date');
+  const party=Math.max(parseInt($('rParty').value||'2',10)||2,1);
+  const start=new Date(date+'T'+time), end=new Date(start.getTime()+90*60000);
+  const deposit=50000*party;
+  const btn=$('rSubmit'); btn.disabled=true; btn.textContent='Sending…';
+  try{
+    const id=await rpc('create_public_booking',{branch_id:BRANCH_ID,customer_name:name,customer_phone:$('rPhone').value.trim(),
+      party_size:party,note:$('rNote').value.trim(),deposit,start_time:start.toISOString(),end_time:end.toISOString(),
+      resource_ref:party+' pax'+($('rNote').value.trim()?' · '+$('rNote').value.trim():'')});
+    $('reserveCode').textContent='Reservation '+code(id);
+    $('resPay').innerHTML=payPanelHTML('reservation',id,deposit);
+    $('reserveForm').classList.add('hidden'); $('reserveOk').classList.remove('hidden');
+  }catch(e){ toast('Could not send reservation. Please try again.'); btn.disabled=false; btn.textContent='Request reservation'; }
+}
+function resetReserve(){ $('reserveOk').classList.add('hidden'); $('reserveForm').classList.remove('hidden'); const b=$('rSubmit'); b.disabled=false; b.textContent='Request reservation'; ['rName','rPhone','rDate','rTime','rNote'].forEach(id=>$(id).value=''); $('rTime').value='19:00'; $('rParty').value='2'; }
+
+/* ---------- deposit + proof ---------- */
+function payPanelHTML(kind,id,amount){
+  const label=(kind==='order'?'Order ':'Reservation ')+code(id);
+  const waMsg=encodeURIComponent('Halo Homeslice, ini bukti transfer untuk '+label+' (DP '+fmt(amount)+').');
+  return `<div class="depbox">
+    <div class="dephead">To confirm, transfer a deposit of</div>
+    <div class="depamt">${fmt(amount)}</div>
+    <div class="bankrow"><div><div class="bk">${BANK.bank}</div><div class="acc">${BANK.acc}</div><div class="bk">a.n. ${BANK.holder}</div></div>
+      <button class="copy" onclick="copyAcc()">Copy</button></div>
+    <div class="depnote">Then send your transfer proof — choose one:</div>
+    <a class="waBtn" href="https://wa.me/${WA}?text=${waMsg}" target="_blank" rel="noopener">Send proof on WhatsApp</a>
+    <label class="upBtn" for="up_${kind}">Or upload proof here</label>
+    <input id="up_${kind}" type="file" accept="image/*" style="display:none" onchange="uploadProof('${kind}',${JSON.stringify(id)},this)"/>
+    <div class="upstat" id="upstat_${kind}"></div></div>`;
+}
+function copyAcc(){ if(navigator.clipboard) navigator.clipboard.writeText(BANK.acc).catch(()=>{}); toast('Account number copied'); }
+async function uploadProof(kind,id,input){
+  const file=input.files&&input.files[0]; if(!file) return;
+  const stat=$('upstat_'+kind); stat.classList.remove('ok2'); stat.textContent='Uploading…';
+  const ext=((file.type.split('/')[1])||'jpg').replace('jpeg','jpg');
+  const path=kind+'s/'+id+'-'+Date.now()+'.'+ext;
+  try{
+    const up=await fetch(STORAGE+'/object/private-proofs/'+path,{method:'POST',headers:{...HEAD,'Content-Type':file.type||'image/jpeg'},body:file});
+    if(!up.ok) throw new Error('upload '+up.status);
+    await rpc('attach_payment_proof',{kind,id,url:path});
+    stat.textContent='✓ Proof received — we’ll confirm shortly. Thank you!'; stat.classList.add('ok2');
+  }catch(e){ stat.textContent='Upload failed — please send it on WhatsApp instead.'; }
+}
+
+/* ---------- boot ---------- */
+let toastT;
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2000); }
+$('rDate').value=new Date().toISOString().slice(0,10);
+loadMenu();
+</script>
+</body>
+</html>
