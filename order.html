@@ -142,11 +142,14 @@ a{color:inherit;text-decoration:none}
       <div class="field"><label>Name</label><input id="rName" type="text" placeholder="Your name"/></div>
       <div class="field"><label>Phone / WhatsApp</label><input id="rPhone" type="tel" placeholder="08…"/></div>
       <div class="row2">
-        <div class="field"><label>Date</label><input id="rDate" type="date"/></div>
-        <div class="field"><label>Time</label><input id="rTime" type="time" value="19:00"/></div>
+        <div class="field"><label>Date</label><input id="rDate" type="date" onchange="refreshTables()"/></div>
+        <div class="field"><label>Time</label><input id="rTime" type="time" value="19:00" onchange="refreshTables()"/></div>
       </div>
       <div class="field"><label>Party size</label>
-        <select id="rParty"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
+        <select id="rParty" onchange="refreshTables()"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
+      </div>
+      <div class="field"><label>Available tables</label>
+        <div id="tableList" class="vars"><span class="empty" style="padding:0;font-size:.82rem">Pick a date &amp; time to see free tables.</span></div>
       </div>
       <div class="field"><label>Note (optional)</label><textarea id="rNote" rows="2" placeholder="Occasion, seating preference…"></textarea></div>
       <input class="hp" id="hp_reserve" name="url" tabindex="-1" autocomplete="off" aria-hidden="true"/>
@@ -214,7 +217,7 @@ const fmt = n => 'Rp ' + (Number(n)||0).toLocaleString('id-ID');
 const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const code = id => String(id).replace(/-/g,'').slice(0,6).toUpperCase();
 
-let BRANCH_ID=null, taxPct=0, svcPct=0, allItems=[], activeCat=null, orderType='takeaway';
+let BRANCH_ID=null, taxPct=0, svcPct=0, allItems=[], activeCat=null, orderType='takeaway', selectedTable=null;
 const cart = new Map(); // "itemId:optId" -> {catalog_item_id, option_id, name, variant_name, price, qty}
 
 async function getJSON(path){ const r=await fetch(REST+path,{headers:HEAD}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
@@ -234,18 +237,21 @@ function switchTab(t){
 /* ---------- menu ---------- */
 async function loadMenu(){
   try{
-    const [items, cats, settings] = await Promise.all([
+    const [items, cats, settings, avail] = await Promise.all([
       getJSON('/catalog_items?select=id,name,price,category_id,photo_url,is_active,metadata,catalog_item_options(id,name,option_group,price_delta)&is_active=eq.true'),
       getJSON('/categories?select=id,name,sort_order&order=sort_order'),
       getJSON('/branch_settings?select=default_tax_pct,default_service_pct,branch_id&limit=1'),
+      rpc('public_menu_availability', {}).catch(()=>[]),
     ]);
     const s = settings[0]||{}; taxPct=+s.default_tax_pct||0; svcPct=+s.default_service_pct||0; BRANCH_ID=s.branch_id||null;
+    // Items whose recipe can't be made from current Storage stock → sold out.
+    const outSet = new Set((avail||[]).filter(a=>a.in_stock===false).map(a=>a.catalog_item_id));
     const catName={}; cats.forEach(c=>catName[c.id]=c.name);
     allItems = items.map(i=>{
       const variants=(i.catalog_item_options||[]).filter(o=>VARIANT_GROUPS.has(o.option_group))
         .map(o=>({id:o.id,name:o.name,price:(Number(i.price)||0)+(Number(o.price_delta)||0)}));
       return {id:i.id,name:i.name,price:Number(i.price)||0,category:catName[i.category_id]||'Menu',
-        desc:(i.metadata&&i.metadata.description)||'',photo:i.photo_url||'',variants};
+        desc:(i.metadata&&i.metadata.description)||'',photo:i.photo_url||'',variants,out:outSet.has(i.id)};
     }).filter(i=>i.price>0||i.variants.length>0);
     buildCats(); renderMenu();
   }catch(e){ $('menu').innerHTML='<div class="empty">Could not load the menu. Please try again.</div>'; }
@@ -267,8 +273,17 @@ function cardHTML(i){
   let priceTxt, below='';
   if(hasV){
     priceTxt='from '+fmt(Math.min(...i.variants.map(v=>v.price)));
-    below='<div class="vars">'+i.variants.map(v=>`<button class="vbtn" onclick="addToCart('${i.id}','${v.id}')"><span>${esc(v.name)}</span><b>${fmt(v.price)}</b></button>`).join('')+'</div>';
   } else priceTxt=fmt(i.price);
+  if(i.out){
+    return `<div class="card" style="opacity:.5">
+      <div class="ph" ${img}>${i.photo?'':initial}</div>
+      <div class="bd"><span class="badge" style="color:var(--ter);border-color:var(--ter)">Sold out</span>
+        <div class="nm">${esc(i.name)}</div><div class="ds">${esc(i.desc)}</div>
+        <div class="rw"><span class="price">${priceTxt}</span></div></div></div>`;
+  }
+  if(hasV){
+    below='<div class="vars">'+i.variants.map(v=>`<button class="vbtn" onclick="addToCart('${i.id}','${v.id}')"><span>${esc(v.name)}</span><b>${fmt(v.price)}</b></button>`).join('')+'</div>';
+  }
   const addBtn=hasV?'':`<button class="add" onclick="addToCart('${i.id}')">Add</button>`;
   return `<div class="card"><div class="ph" ${img}>${i.photo?'':initial}</div>
     <div class="bd"><div class="nm">${esc(i.name)}</div>
@@ -280,6 +295,7 @@ function cardHTML(i){
 const keyOf=(id,opt)=>id+':'+(opt||'');
 function addToCart(id, optId){
   const item=allItems.find(i=>i.id===id); if(!item) return;
+  if(item.out){ toast('Sorry, this item is sold out'); return; }
   let name=item.name, price=item.price, vname=null; const oid=optId||null;
   if(oid){ const v=item.variants.find(x=>x.id===oid); if(!v) return; vname=v.name; price=v.price; }
   if(!(price>0)) return;
@@ -329,6 +345,31 @@ async function placeOrder(){
 }
 function resetOrder(){ $('orderOk').classList.add('hidden'); $('checkout').classList.remove('hidden'); const b=$('placeBtn'); b.disabled=false; b.textContent='Place order'; ['cName','cPhone','cNote'].forEach(id=>$(id).value=''); closeCart(); }
 
+/* ---------- reservation: real-time table availability ---------- */
+function resInfo(t){ return '<span class="empty" style="padding:0;font-size:.82rem">'+t+'</span>'; }
+function resStart(){
+  const date=$('rDate').value, time=$('rTime').value||'19:00';
+  return date ? new Date(date+'T'+time) : null;
+}
+async function refreshTables(){
+  selectedTable=null;
+  const el=$('tableList');
+  const start=resStart();
+  if(!start||!BRANCH_ID){ el.innerHTML=resInfo('Pick a date &amp; time to see free tables.'); return; }
+  const party=Math.max(parseInt($('rParty').value||'2',10)||2,1);
+  el.innerHTML=resInfo('Checking availability…');
+  try{
+    const tables=await rpc('public_available_tables',{branch_id:BRANCH_ID,start_time:start.toISOString(),party_size:party});
+    if(!tables||!tables.length){ el.innerHTML=resInfo('No tables free for that slot — send the request and we’ll confirm by phone.'); return; }
+    el.innerHTML=tables.map(t=>`<button type="button" class="vbtn" data-id="${t.id}" data-name="${esc(t.name)}" onclick="pickTable(this)"><span>${esc(t.name)}</span><b>${t.capacity} pax</b></button>`).join('');
+  }catch(e){ el.innerHTML=resInfo('Couldn’t load tables — you can still send the request.'); }
+}
+function pickTable(el){
+  selectedTable={id:el.dataset.id,name:el.dataset.name};
+  document.querySelectorAll('#tableList .vbtn').forEach(b=>{ b.style.borderColor=''; b.style.background=''; });
+  el.style.borderColor='var(--gld)'; el.style.background='rgba(201,147,74,.16)';
+}
+
 /* ---------- reservation ---------- */
 async function submitReservation(){
   const name=$('rName').value.trim(); if(!name) return toast('Please enter your name');
@@ -342,13 +383,15 @@ async function submitReservation(){
   try{
     const id=await rpc('create_public_booking',{branch_id:BRANCH_ID,customer_name:name,customer_phone:$('rPhone').value.trim(),
       party_size:party,note:$('rNote').value.trim(),deposit,start_time:start.toISOString(),end_time:end.toISOString(),
-      resource_ref:party+' pax'+($('rNote').value.trim()?' · '+$('rNote').value.trim():''),hp:$('hp_reserve').value});
+      resource_id:selectedTable?selectedTable.id:null,
+      resource_ref:(selectedTable?selectedTable.name+' · ':'')+party+' pax'+($('rNote').value.trim()?' · '+$('rNote').value.trim():''),
+      hp:$('hp_reserve').value});
     $('reserveCode').textContent='Reservation '+code(id);
     $('resPay').innerHTML=payPanelHTML('reservation',id,deposit);
     $('reserveForm').classList.add('hidden'); $('reserveOk').classList.remove('hidden');
   }catch(e){ toast('Could not send reservation. Please try again.'); btn.disabled=false; btn.textContent='Request reservation'; }
 }
-function resetReserve(){ $('reserveOk').classList.add('hidden'); $('reserveForm').classList.remove('hidden'); const b=$('rSubmit'); b.disabled=false; b.textContent='Request reservation'; ['rName','rPhone','rDate','rTime','rNote'].forEach(id=>$(id).value=''); $('rTime').value='19:00'; $('rParty').value='2'; }
+function resetReserve(){ $('reserveOk').classList.add('hidden'); $('reserveForm').classList.remove('hidden'); const b=$('rSubmit'); b.disabled=false; b.textContent='Request reservation'; ['rName','rPhone','rNote'].forEach(id=>$(id).value=''); $('rDate').value=new Date().toISOString().slice(0,10); $('rTime').value='19:00'; $('rParty').value='2'; refreshTables(); }
 
 /* ---------- deposit + proof ---------- */
 function payPanelHTML(kind,id,amount){
@@ -383,7 +426,7 @@ async function uploadProof(kind,id,input){
 let toastT;
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2000); }
 $('rDate').value=new Date().toISOString().slice(0,10);
-loadMenu();
+loadMenu().then(refreshTables);
 </script>
 </body>
 </html>
