@@ -238,6 +238,7 @@ const code = id => String(id).replace(/-/g,'').slice(0,6).toUpperCase();
 let BRANCH_ID=null, taxPct=0, svcPct=0, allItems=[], activeCat=null, orderType='takeaway', pending=null, proofFile=null;
 const tableSel={reserve:null, order:null}; // chosen table per flow
 const cart = new Map(); // "itemId:optId" -> {catalog_item_id, option_id, name, variant_name, price, qty}
+const CART_CACHE_KEY='hs_order_cache_v1', CART_TTL=15*60*1000; // keep the customer's in-progress order for 15 min
 
 async function getJSON(path){ const r=await fetch(REST+path,{headers:HEAD}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
 async function rpc(fn, payload){
@@ -320,13 +321,43 @@ function addToCart(id, optId){
   if(!(price>0)) return;
   const key=keyOf(id,oid);
   const e=cart.get(key)||{catalog_item_id:id,option_id:oid,name,variant_name:vname,price,qty:0};
-  e.qty++; cart.set(key,e); updateCartBar();
+  e.qty++; cart.set(key,e); updateCartBar(); saveCart();
   toast((vname?name+' ('+vname+')':name)+' added');
 }
-function changeQty(key,d){ const e=cart.get(key); if(!e) return; e.qty+=d; if(e.qty<=0) cart.delete(key); updateCartBar(); renderCart(); if(cart.size===0) closeCart(); }
+function changeQty(key,d){ const e=cart.get(key); if(!e) return; e.qty+=d; if(e.qty<=0) cart.delete(key); updateCartBar(); saveCart(); renderCart(); if(cart.size===0) closeCart(); }
 function cartCount(){ let n=0; cart.forEach(e=>n+=e.qty); return n; }
 function calcTotals(){ let sub=0; cart.forEach(e=>sub+=e.price*e.qty); const svc=Math.round(sub*svcPct/100); const tax=Math.round((sub+svc)*taxPct/100); const total=sub+svc+tax; return {sub,svc,tax,total,deposit:Math.round(total/2)}; }
 function updateCartBar(){ const n=cartCount(); $('cartCount').textContent=n; $('cartTotal').textContent=fmt(calcTotals().total); $('cartbar').classList.toggle('show', n>0 && !$('paneOrder').classList.contains('hidden')); }
+/* ---------- 15-minute local order cache (per device, no server) ---------- */
+function saveCart(){
+  try{
+    const v=id=>{ const el=$(id); return el?el.value:''; };
+    const data={ t:Date.now(), items:[...cart.values()], name:v('cName'), phone:v('cPhone'), note:v('cNote'),
+      type:orderType, oDate:v('oDate'), oTime:v('oTime'), oParty:v('oParty') };
+    if(cart.size===0 && !data.name && !data.phone){ localStorage.removeItem(CART_CACHE_KEY); return; }
+    localStorage.setItem(CART_CACHE_KEY, JSON.stringify(data));
+  }catch(e){}
+}
+function clearCartCache(){ try{ localStorage.removeItem(CART_CACHE_KEY); }catch(e){} }
+function restoreCart(){
+  try{
+    const raw=localStorage.getItem(CART_CACHE_KEY); if(!raw) return;
+    const data=JSON.parse(raw);
+    if(!data || !data.t || (Date.now()-data.t)>CART_TTL){ clearCartCache(); return; } // expired → drop
+    const set=(id,val)=>{ const el=$(id); if(el && val) el.value=val; };
+    set('cName',data.name); set('cPhone',data.phone); set('cNote',data.note);
+    (data.items||[]).forEach(e=>{
+      if(!e || !e.catalog_item_id || !(e.qty>0)) return;
+      const cur=allItems.find(i=>i.id===e.catalog_item_id); if(cur && cur.out) return; // skip now-sold-out
+      cart.set(keyOf(e.catalog_item_id, e.option_id),
+        {catalog_item_id:e.catalog_item_id, option_id:e.option_id||null, name:e.name, variant_name:e.variant_name||null, price:e.price, qty:e.qty});
+    });
+    if(data.type==='dine_in'){ const el=document.querySelector('#typeSeg .opt[data-type="dine_in"]'); if(el) setType(el);
+      set('oDate',data.oDate); set('oTime',data.oTime); set('oParty',data.oParty); }
+    updateCartBar();
+    if(cart.size>0) toast('Restored your earlier order');
+  }catch(e){ clearCartCache(); }
+}
 function renderCart(){
   const el=$('cartLines');
   if(cart.size===0){ el.innerHTML='<div class="empty">Your cart is empty.</div>'; }
@@ -387,7 +418,7 @@ function placeOrder(){
   showDeposit('order', t.deposit);
 }
 function resetOrder(){
-  pending=null; proofFile=null;
+  pending=null; proofFile=null; clearCartCache();
   $('orderOk').classList.add('hidden'); $('checkout').classList.remove('hidden');
   $('orderCode').textContent='Order';
   ['cName','cPhone','cNote'].forEach(id=>$(id).value='');
@@ -501,7 +532,7 @@ async function commit(method){
     if(!pending.id){
       setStat('Registering…',false);
       pending.id=await pending.create();
-      if(pending.kind==='order'){ cart.clear(); updateCartBar(); }
+      if(pending.kind==='order'){ cart.clear(); updateCartBar(); clearCartCache(); }
       const codeEl=pending.kind==='order'?$('orderCode'):$('reserveCode');
       if(codeEl) codeEl.textContent=(pending.kind==='order'?'Order ':'Reservation ')+code(pending.id);
     }
@@ -542,7 +573,9 @@ function notifySuccess(kind,id){
 let toastT;
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2000); }
 $('rDate').value=new Date().toISOString().slice(0,10);
-loadMenu().then(()=>refreshTablesGeneric('rDate','rTime','rParty','tableList','reserve'));
+// persist the order form as the customer edits it (15-min cache)
+['cName','cPhone','cNote','oDate','oTime','oParty'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('input', saveCart); });
+loadMenu().then(()=>{ restoreCart(); refreshTablesGeneric('rDate','rTime','rParty','tableList','reserve'); });
 </script>
 </body>
 </html>
