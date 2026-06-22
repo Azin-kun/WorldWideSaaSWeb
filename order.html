@@ -372,7 +372,7 @@ function placeOrder(){
       const end=new Date(resv.start.getTime()+90*60000);
       await rpc('create_public_booking',{branch_id:BRANCH_ID,customer_name:name,customer_phone:phone,
         party_size:resv.party,note:note,deposit:t.deposit,start_time:resv.start.toISOString(),end_time:end.toISOString(),
-        resource_id:resv.table?resv.table.id:null,
+        resource_id:resv.table?resv.table.id:null,from_order:true,
         resource_ref:(resv.table?resv.table.name+' · ':'')+resv.party+' pax (online order)',hp:$('hp_order').value});
     }
     const dineNote=dineIn?('Dine-in '+resv.dateStr+' '+resv.timeStr+(resv.table?' · Table '+resv.table.name:'')+' · '+resv.party+' pax'+(note?(' · '+note):'')):note;
