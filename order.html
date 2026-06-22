@@ -106,6 +106,12 @@ a{color:inherit;text-decoration:none}
 .waBtn{display:block;text-align:center;background:#25D366;color:#04210f;font-weight:700;padding:.7rem;border-radius:6px;margin-bottom:.6rem;font-size:.82rem}
 .upBtn{display:block;text-align:center;border:1px solid var(--line);color:var(--crm);padding:.7rem;border-radius:6px;cursor:pointer;font-size:.82rem}
 .upstat{font-size:.82rem;margin-top:.6rem;color:var(--crm2)}.upstat.ok2{color:#7fe0a0}
+.proofPrev{display:flex;align-items:center;gap:.6rem;margin:.6rem 0;font-size:.78rem;color:var(--crm2)}
+.proofPrev img{width:46px;height:46px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.proofPrev span{word-break:break-all}
+.coBtn{display:block;width:100%;text-align:center;background:var(--gld);color:var(--esp);font-weight:700;padding:.8rem;border:none;border-radius:6px;cursor:pointer;font-size:.9rem;margin:.2rem 0 .6rem}
+.coBtn:disabled{opacity:.55;cursor:default}
+.ordiv{text-align:center;font-size:.72rem;color:var(--crm2);text-transform:uppercase;letter-spacing:.12em;margin:.4rem 0}
 .ok-msg{text-align:center;padding:1rem 0}.ok-msg .tick{font-size:2.4rem;color:var(--gld)}
 .codeline{font-family:var(--ff);font-size:1.4rem;color:var(--gld);margin:.3rem 0}
 .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--brn2);border:1px solid var(--line);
@@ -229,7 +235,7 @@ const fmt = n => 'Rp ' + (Number(n)||0).toLocaleString('id-ID');
 const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const code = id => String(id).replace(/-/g,'').slice(0,6).toUpperCase();
 
-let BRANCH_ID=null, taxPct=0, svcPct=0, allItems=[], activeCat=null, orderType='takeaway', pending=null;
+let BRANCH_ID=null, taxPct=0, svcPct=0, allItems=[], activeCat=null, orderType='takeaway', pending=null, proofFile=null;
 const tableSel={reserve:null, order:null}; // chosen table per flow
 const cart = new Map(); // "itemId:optId" -> {catalog_item_id, option_id, name, variant_name, price, qty}
 
@@ -381,7 +387,7 @@ function placeOrder(){
   showDeposit('order', t.deposit);
 }
 function resetOrder(){
-  pending=null;
+  pending=null; proofFile=null;
   $('orderOk').classList.add('hidden'); $('checkout').classList.remove('hidden');
   $('orderCode').textContent='Order';
   ['cName','cPhone','cNote'].forEach(id=>$(id).value='');
@@ -432,7 +438,7 @@ function submitReservation(){
   showDeposit('reservation', deposit);
 }
 function resetReserve(){
-  pending=null;
+  pending=null; proofFile=null;
   $('reserveOk').classList.add('hidden'); $('reserveForm').classList.remove('hidden');
   $('reserveCode').textContent='Reservation';
   ['rName','rPhone','rNote'].forEach(id=>$(id).value='');
@@ -457,19 +463,40 @@ function depositHTML(kind, amount){
     <div class="bankrow"><div><div class="bk">${BANK.bank}</div><div class="acc">${BANK.acc}</div><div class="bk">a.n. ${BANK.holder}</div></div>
       <button class="copy" onclick="copyAcc()">Copy</button></div>
     <div class="depnote" style="color:var(--gld2)">⏱ Please transfer and send proof within 30 minutes. Your ${what} is only registered once we receive your proof — unpaid ${what}s are released after 30 minutes.</div>
-    <div class="depnote">Send your transfer proof — choose one:</div>
+    <div class="depnote">Attach your transfer proof, then check out:</div>
+    <label class="upBtn" for="proofFile">📎 Choose proof image</label>
+    <input id="proofFile" type="file" accept="image/*" style="display:none" onchange="pickProof(this)"/>
+    <div class="proofPrev hidden" id="proofPreview"></div>
+    <button class="coBtn hidden" id="checkoutBtn" onclick="commit('upload')">Check out ${what}</button>
+    <div class="ordiv">or</div>
     <a class="waBtn" href="javascript:void(0)" onclick="commit('wa')">Send proof on WhatsApp</a>
-    <label class="upBtn" for="proofFile">Or upload proof here</label>
-    <input id="proofFile" type="file" accept="image/*" style="display:none" onchange="commit('upload', this)"/>
     <div class="upstat" id="upstat"></div></div>`;
 }
 function copyAcc(){ if(navigator.clipboard) navigator.clipboard.writeText(BANK.acc).catch(()=>{}); toast('Account number copied'); }
-// Create the record on first proof action, then attach the proof (upload) or
-// hand off to WhatsApp.
-async function commit(method, input){
+// Hold the chosen proof image locally; nothing is uploaded or sent until the
+// customer taps "Check out". This lets them preview/replace the image first.
+function pickProof(input){
+  const file=input&&input.files&&input.files[0];
+  proofFile=file||null;
+  const prev=$('proofPreview'), btn=$('checkoutBtn'), stat=$('upstat');
+  if(!proofFile){ if(prev){ prev.classList.add('hidden'); prev.innerHTML=''; } if(btn) btn.classList.add('hidden'); return; }
+  if(prev){
+    if(prev.dataset.url) URL.revokeObjectURL(prev.dataset.url);
+    const url=URL.createObjectURL(proofFile); prev.dataset.url=url;
+    prev.innerHTML='<img src="'+url+'" alt="proof"/><span>'+esc(proofFile.name)+' — ready to check out</span>';
+    prev.classList.remove('hidden');
+  }
+  if(btn){ btn.classList.remove('hidden'); btn.disabled=false; }
+  if(stat){ stat.classList.remove('ok2'); stat.textContent='Proof attached — tap "Check out" to send it.'; }
+}
+// Create the record (on first action), then EITHER upload the held proof to the
+// DB + notify staff (Telegram), or hand off to WhatsApp.
+async function commit(method){
   if(!pending) return;
-  const stat=$('upstat');
+  const stat=$('upstat'), btn=$('checkoutBtn');
   const setStat=(m,ok)=>{ if(stat){ stat.classList.toggle('ok2',!!ok); stat.textContent=m; } };
+  if(method==='upload' && !proofFile){ setStat('Please attach your transfer proof first.',false); return; }
+  if(btn) btn.disabled=true;
   try{
     if(!pending.id){
       setStat('Registering…',false);
@@ -485,15 +512,30 @@ async function commit(method, input){
       window.location.href='https://wa.me/'+WA+'?text='+waMsg;
       return;
     }
-    const file=input&&input.files&&input.files[0]; if(!file) return;
-    setStat('Uploading…',false);
+    const file=proofFile; if(!file){ if(btn) btn.disabled=false; return; }
+    setStat('Checking out — uploading your proof…',false);
     const ext=((file.type.split('/')[1])||'jpg').replace('jpeg','jpg');
     const path=pending.kind+'s/'+pending.id+'-'+Date.now()+'.'+ext;
     const up=await fetch(STORAGE+'/object/private-proofs/'+path,{method:'POST',headers:{...HEAD,'Content-Type':file.type||'image/jpeg'},body:file});
     if(!up.ok) throw new Error('upload '+up.status);
     await rpc('attach_payment_proof',{kind:pending.kind,id:pending.id,url:path});
-    setStat('✓ Proof received — we’ll confirm shortly. Thank you!',true);
-  }catch(e){ setStat('Something went wrong — please try again or use WhatsApp.',false); }
+    proofFile=null;
+    if(btn){ btn.textContent='✓ Checked out'; btn.disabled=true; }
+    setStat('✓ Order checked out! Proof sent — we’ll confirm shortly. Thank you!',true);
+    notifySuccess(pending.kind, pending.id);
+  }catch(e){ setStat('Something went wrong — please try again or use WhatsApp.',false); if(btn) btn.disabled=false; }
+}
+// Success feedback after check-out: in-page toast + best-effort browser notification.
+function notifySuccess(kind,id){
+  const label=(kind==='order'?'Order ':'Reservation ')+code(id);
+  toast('✅ '+label+' checked out — we’ll confirm shortly!');
+  try{
+    if('Notification' in window){
+      const show=()=>new Notification('Homeslice — '+label+' confirmed', {body:'Proof received. We’ll confirm your '+kind+' shortly.'});
+      if(Notification.permission==='granted') show();
+      else if(Notification.permission!=='denied') Notification.requestPermission().then(p=>{ if(p==='granted') show(); });
+    }
+  }catch(e){}
 }
 
 /* ---------- boot ---------- */
