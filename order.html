@@ -142,11 +142,11 @@ a{color:inherit;text-decoration:none}
       <div class="field"><label>Name</label><input id="rName" type="text" placeholder="Your name"/></div>
       <div class="field"><label>Phone / WhatsApp</label><input id="rPhone" type="tel" placeholder="08…"/></div>
       <div class="row2">
-        <div class="field"><label>Date</label><input id="rDate" type="date" onchange="refreshTables()"/></div>
-        <div class="field"><label>Time</label><input id="rTime" type="time" value="19:00" onchange="refreshTables()"/></div>
+        <div class="field"><label>Date</label><input id="rDate" type="date" onchange="refreshTablesGeneric('rDate','rTime','rParty','tableList','reserve')"/></div>
+        <div class="field"><label>Time</label><input id="rTime" type="time" value="19:00" onchange="refreshTablesGeneric('rDate','rTime','rParty','tableList','reserve')"/></div>
       </div>
       <div class="field"><label>Party size</label>
-        <select id="rParty" onchange="refreshTables()"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
+        <select id="rParty" onchange="refreshTablesGeneric('rDate','rTime','rParty','tableList','reserve')"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
       </div>
       <div class="field"><label>Available tables</label>
         <div id="tableList" class="vars"><span class="empty" style="padding:0;font-size:.82rem">Pick a date &amp; time to see free tables.</span></div>
@@ -181,6 +181,18 @@ a{color:inherit;text-decoration:none}
     <div class="seg" id="typeSeg">
       <div class="opt on" data-type="takeaway" onclick="setType(this)">Takeaway</div>
       <div class="opt" data-type="dine_in" onclick="setType(this)">Dine-in</div>
+    </div>
+    <div id="dineFields" class="hidden">
+      <div class="row2">
+        <div class="field"><label>Date</label><input id="oDate" type="date" onchange="refreshTablesGeneric('oDate','oTime','oParty','oTableList','order')"/></div>
+        <div class="field"><label>Time</label><input id="oTime" type="time" value="19:00" onchange="refreshTablesGeneric('oDate','oTime','oParty','oTableList','order')"/></div>
+      </div>
+      <div class="field"><label>Party size</label>
+        <select id="oParty" onchange="refreshTablesGeneric('oDate','oTime','oParty','oTableList','order')"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
+      </div>
+      <div class="field"><label>Available tables</label>
+        <div id="oTableList" class="vars"><span class="empty" style="padding:0;font-size:.82rem">Pick a date &amp; time to see free tables.</span></div>
+      </div>
     </div>
     <div class="field"><label>Name</label><input id="cName" type="text" placeholder="Your name"/></div>
     <div class="field"><label>Phone / WhatsApp</label><input id="cPhone" type="tel" placeholder="08…"/></div>
@@ -217,7 +229,8 @@ const fmt = n => 'Rp ' + (Number(n)||0).toLocaleString('id-ID');
 const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const code = id => String(id).replace(/-/g,'').slice(0,6).toUpperCase();
 
-let BRANCH_ID=null, taxPct=0, svcPct=0, allItems=[], activeCat=null, orderType='takeaway', selectedTable=null;
+let BRANCH_ID=null, taxPct=0, svcPct=0, allItems=[], activeCat=null, orderType='takeaway', pending=null;
+const tableSel={reserve:null, order:null}; // chosen table per flow
 const cart = new Map(); // "itemId:optId" -> {catalog_item_id, option_id, name, variant_name, price, qty}
 
 async function getJSON(path){ const r=await fetch(REST+path,{headers:HEAD}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
@@ -324,54 +337,84 @@ function renderCart(){
 }
 function openCart(){ if(cart.size===0) return; renderCart(); $('overlay').classList.add('show'); $('sheet').classList.add('show'); }
 function closeCart(){ $('overlay').classList.remove('show'); $('sheet').classList.remove('show'); }
-function setType(el){ orderType=el.dataset.type; document.querySelectorAll('#typeSeg .opt').forEach(o=>o.classList.toggle('on',o===el)); }
+function setType(el){
+  orderType=el.dataset.type;
+  document.querySelectorAll('#typeSeg .opt').forEach(o=>o.classList.toggle('on',o===el));
+  const dine=orderType==='dine_in';
+  $('dineFields').classList.toggle('hidden',!dine);
+  if(dine){
+    if(!$('oDate').value) $('oDate').value=new Date().toISOString().slice(0,10);
+    refreshTablesGeneric('oDate','oTime','oParty','oTableList','order');
+  }
+}
 
-async function placeOrder(){
+// Validate + show the deposit step. Nothing is written to the DB (or Telegram)
+// until the customer actually sends proof (see commit()).
+function placeOrder(){
   const name=$('cName').value.trim(), phone=$('cPhone').value.trim();
   if(cart.size===0) return toast('Your cart is empty');
   if(!name) return toast('Please enter your name');
   if(!phone) return toast('Please enter your phone');
   if(!BRANCH_ID) return toast('Ordering is temporarily unavailable');
-  const btn=$('placeBtn'); btn.disabled=true; btn.textContent='Placing…';
+  const dineIn=orderType==='dine_in';
+  let resv=null;
+  if(dineIn){
+    const date=$('oDate').value, time=$('oTime').value||'19:00';
+    if(!date) return toast('Please pick a date & time for dine-in');
+    const party=Math.max(parseInt($('oParty').value||'2',10)||2,1);
+    resv={party, start:new Date(date+'T'+time), table:tableSel.order, dateStr:date, timeStr:time};
+  }
   const items=[...cart.values()].map(e=>({catalog_item_id:e.catalog_item_id, option_id:e.option_id, qty:e.qty}));
+  const note=$('cNote').value.trim();
   const t=calcTotals();
-  try{
-    const id=await rpc('create_public_order',{branch_id:BRANCH_ID,customer_name:name,customer_phone:phone,order_type:orderType,note:$('cNote').value.trim(),items,hp:$('hp_order').value});
-    $('orderCode').textContent='Order '+code(id);
-    $('orderPay').innerHTML=payPanelHTML('order',id,t.deposit);
-    $('checkout').classList.add('hidden'); $('orderOk').classList.remove('hidden');
-    cart.clear(); updateCartBar();
-  }catch(e){ toast('Could not place order. Please try again.'); btn.disabled=false; btn.textContent='Place order'; }
+  pending={ kind:'order', amount:t.deposit, id:null, create: async ()=>{
+    if(dineIn){
+      const end=new Date(resv.start.getTime()+90*60000);
+      await rpc('create_public_booking',{branch_id:BRANCH_ID,customer_name:name,customer_phone:phone,
+        party_size:resv.party,note:note,deposit:t.deposit,start_time:resv.start.toISOString(),end_time:end.toISOString(),
+        resource_id:resv.table?resv.table.id:null,
+        resource_ref:(resv.table?resv.table.name+' · ':'')+resv.party+' pax (online order)',hp:$('hp_order').value});
+    }
+    const dineNote=dineIn?('Dine-in '+resv.dateStr+' '+resv.timeStr+(resv.table?' · Table '+resv.table.name:'')+' · '+resv.party+' pax'+(note?(' · '+note):'')):note;
+    return await rpc('create_public_order',{branch_id:BRANCH_ID,customer_name:name,customer_phone:phone,order_type:orderType,note:dineNote,items,hp:$('hp_order').value});
+  }};
+  showDeposit('order', t.deposit);
 }
-function resetOrder(){ $('orderOk').classList.add('hidden'); $('checkout').classList.remove('hidden'); const b=$('placeBtn'); b.disabled=false; b.textContent='Place order'; ['cName','cPhone','cNote'].forEach(id=>$(id).value=''); closeCart(); }
+function resetOrder(){
+  pending=null;
+  $('orderOk').classList.add('hidden'); $('checkout').classList.remove('hidden');
+  $('orderCode').textContent='Order';
+  ['cName','cPhone','cNote'].forEach(id=>$(id).value='');
+  orderType='takeaway';
+  document.querySelectorAll('#typeSeg .opt').forEach(o=>o.classList.toggle('on',o.dataset.type==='takeaway'));
+  $('dineFields').classList.add('hidden'); tableSel.order=null;
+  closeCart();
+}
 
-/* ---------- reservation: real-time table availability ---------- */
+/* ---------- real-time table availability (shared by reserve + dine-in) ---------- */
 function resInfo(t){ return '<span class="empty" style="padding:0;font-size:.82rem">'+t+'</span>'; }
-function resStart(){
-  const date=$('rDate').value, time=$('rTime').value||'19:00';
-  return date ? new Date(date+'T'+time) : null;
-}
-async function refreshTables(){
-  selectedTable=null;
-  const el=$('tableList');
-  const start=resStart();
+async function refreshTablesGeneric(dateId,timeId,partyId,listId,selKey){
+  tableSel[selKey]=null;
+  const el=$(listId);
+  const date=$(dateId).value, time=$(timeId).value||'19:00';
+  const start=date?new Date(date+'T'+time):null;
   if(!start||!BRANCH_ID){ el.innerHTML=resInfo('Pick a date &amp; time to see free tables.'); return; }
-  const party=Math.max(parseInt($('rParty').value||'2',10)||2,1);
+  const party=Math.max(parseInt($(partyId).value||'2',10)||2,1);
   el.innerHTML=resInfo('Checking availability…');
   try{
     const tables=await rpc('public_available_tables',{branch_id:BRANCH_ID,start_time:start.toISOString(),party_size:party});
-    if(!tables||!tables.length){ el.innerHTML=resInfo('No tables free for that slot — send the request and we’ll confirm by phone.'); return; }
-    el.innerHTML=tables.map(t=>`<button type="button" class="vbtn" data-id="${t.id}" data-name="${esc(t.name)}" onclick="pickTable(this)"><span>${esc(t.name)}</span><b>${t.capacity} pax</b></button>`).join('');
+    if(!tables||!tables.length){ el.innerHTML=resInfo('No tables free for that slot — we’ll confirm by phone.'); return; }
+    el.innerHTML=tables.map(t=>`<button type="button" class="vbtn" data-id="${t.id}" data-name="${esc(t.name)}" onclick="pickTableGeneric(this,'${listId}','${selKey}')"><span>${esc(t.name)}</span><b>${t.capacity} pax</b></button>`).join('');
   }catch(e){ el.innerHTML=resInfo('Couldn’t load tables — you can still send the request.'); }
 }
-function pickTable(el){
-  selectedTable={id:el.dataset.id,name:el.dataset.name};
-  document.querySelectorAll('#tableList .vbtn').forEach(b=>{ b.style.borderColor=''; b.style.background=''; });
+function pickTableGeneric(el,listId,selKey){
+  tableSel[selKey]={id:el.dataset.id,name:el.dataset.name};
+  document.querySelectorAll('#'+listId+' .vbtn').forEach(b=>{ b.style.borderColor=''; b.style.background=''; });
   el.style.borderColor='var(--gld)'; el.style.background='rgba(201,147,74,.16)';
 }
 
 /* ---------- reservation ---------- */
-async function submitReservation(){
+function submitReservation(){
   const name=$('rName').value.trim(); if(!name) return toast('Please enter your name');
   if(!BRANCH_ID) return toast('Reservations are temporarily unavailable');
   const date=$('rDate').value, time=$('rTime').value||'19:00';
@@ -379,54 +422,85 @@ async function submitReservation(){
   const party=Math.max(parseInt($('rParty').value||'2',10)||2,1);
   const start=new Date(date+'T'+time), end=new Date(start.getTime()+90*60000);
   const deposit=50000*party;
-  const btn=$('rSubmit'); btn.disabled=true; btn.textContent='Sending…';
-  try{
-    const id=await rpc('create_public_booking',{branch_id:BRANCH_ID,customer_name:name,customer_phone:$('rPhone').value.trim(),
-      party_size:party,note:$('rNote').value.trim(),deposit,start_time:start.toISOString(),end_time:end.toISOString(),
-      resource_id:selectedTable?selectedTable.id:null,
-      resource_ref:(selectedTable?selectedTable.name+' · ':'')+party+' pax'+($('rNote').value.trim()?' · '+$('rNote').value.trim():''),
-      hp:$('hp_reserve').value});
-    $('reserveCode').textContent='Reservation '+code(id);
-    $('resPay').innerHTML=payPanelHTML('reservation',id,deposit);
-    $('reserveForm').classList.add('hidden'); $('reserveOk').classList.remove('hidden');
-  }catch(e){ toast('Could not send reservation. Please try again.'); btn.disabled=false; btn.textContent='Request reservation'; }
+  const note=$('rNote').value.trim(), phone=$('rPhone').value.trim(), table=tableSel.reserve;
+  pending={ kind:'reservation', amount:deposit, id:null, create: async ()=>
+    await rpc('create_public_booking',{branch_id:BRANCH_ID,customer_name:name,customer_phone:phone,
+      party_size:party,note:note,deposit,start_time:start.toISOString(),end_time:end.toISOString(),
+      resource_id:table?table.id:null,
+      resource_ref:(table?table.name+' · ':'')+party+' pax'+(note?(' · '+note):''),hp:$('hp_reserve').value})
+  };
+  showDeposit('reservation', deposit);
 }
-function resetReserve(){ $('reserveOk').classList.add('hidden'); $('reserveForm').classList.remove('hidden'); const b=$('rSubmit'); b.disabled=false; b.textContent='Request reservation'; ['rName','rPhone','rNote'].forEach(id=>$(id).value=''); $('rDate').value=new Date().toISOString().slice(0,10); $('rTime').value='19:00'; $('rParty').value='2'; refreshTables(); }
+function resetReserve(){
+  pending=null;
+  $('reserveOk').classList.add('hidden'); $('reserveForm').classList.remove('hidden');
+  $('reserveCode').textContent='Reservation';
+  ['rName','rPhone','rNote'].forEach(id=>$(id).value='');
+  $('rDate').value=new Date().toISOString().slice(0,10); $('rTime').value='19:00'; $('rParty').value='2';
+  tableSel.reserve=null;
+  refreshTablesGeneric('rDate','rTime','rParty','tableList','reserve');
+}
 
-/* ---------- deposit + proof ---------- */
-function payPanelHTML(kind,id,amount){
-  const label=(kind==='order'?'Order ':'Reservation ')+code(id);
-  const waMsg=encodeURIComponent('Halo Homeslice, ini bukti transfer untuk '+label+' (DP '+fmt(amount)+').');
+/* ---------- deposit + proof ----------
+   Nothing is written to the DB (or sent to staff/Telegram) until the customer
+   sends proof: commit() creates the order/booking on the FIRST proof action. */
+function showDeposit(kind, amount){
+  const html=depositHTML(kind, amount);
+  if(kind==='order'){ $('orderPay').innerHTML=html; $('orderCode').textContent='Almost there'; $('checkout').classList.add('hidden'); $('orderOk').classList.remove('hidden'); }
+  else { $('resPay').innerHTML=html; $('reserveCode').textContent='Almost there'; $('reserveForm').classList.add('hidden'); $('reserveOk').classList.remove('hidden'); }
+}
+function depositHTML(kind, amount){
+  const what=kind==='order'?'order':'reservation';
   return `<div class="depbox">
     <div class="dephead">To confirm, transfer a deposit of</div>
     <div class="depamt">${fmt(amount)}</div>
     <div class="bankrow"><div><div class="bk">${BANK.bank}</div><div class="acc">${BANK.acc}</div><div class="bk">a.n. ${BANK.holder}</div></div>
       <button class="copy" onclick="copyAcc()">Copy</button></div>
-    <div class="depnote">Then send your transfer proof — choose one:</div>
-    <a class="waBtn" href="https://wa.me/${WA}?text=${waMsg}" target="_blank" rel="noopener">Send proof on WhatsApp</a>
-    <label class="upBtn" for="up_${kind}">Or upload proof here</label>
-    <input id="up_${kind}" type="file" accept="image/*" style="display:none" onchange="uploadProof('${kind}',${JSON.stringify(id)},this)"/>
-    <div class="upstat" id="upstat_${kind}"></div></div>`;
+    <div class="depnote" style="color:var(--gld2)">⏱ Please transfer and send proof within 30 minutes. Your ${what} is only registered once we receive your proof — unpaid ${what}s are released after 30 minutes.</div>
+    <div class="depnote">Send your transfer proof — choose one:</div>
+    <a class="waBtn" href="javascript:void(0)" onclick="commit('wa')">Send proof on WhatsApp</a>
+    <label class="upBtn" for="proofFile">Or upload proof here</label>
+    <input id="proofFile" type="file" accept="image/*" style="display:none" onchange="commit('upload', this)"/>
+    <div class="upstat" id="upstat"></div></div>`;
 }
 function copyAcc(){ if(navigator.clipboard) navigator.clipboard.writeText(BANK.acc).catch(()=>{}); toast('Account number copied'); }
-async function uploadProof(kind,id,input){
-  const file=input.files&&input.files[0]; if(!file) return;
-  const stat=$('upstat_'+kind); stat.classList.remove('ok2'); stat.textContent='Uploading…';
-  const ext=((file.type.split('/')[1])||'jpg').replace('jpeg','jpg');
-  const path=kind+'s/'+id+'-'+Date.now()+'.'+ext;
+// Create the record on first proof action, then attach the proof (upload) or
+// hand off to WhatsApp.
+async function commit(method, input){
+  if(!pending) return;
+  const stat=$('upstat');
+  const setStat=(m,ok)=>{ if(stat){ stat.classList.toggle('ok2',!!ok); stat.textContent=m; } };
   try{
+    if(!pending.id){
+      setStat('Registering…',false);
+      pending.id=await pending.create();
+      if(pending.kind==='order'){ cart.clear(); updateCartBar(); }
+      const codeEl=pending.kind==='order'?$('orderCode'):$('reserveCode');
+      if(codeEl) codeEl.textContent=(pending.kind==='order'?'Order ':'Reservation ')+code(pending.id);
+    }
+    if(method==='wa'){
+      const label=(pending.kind==='order'?'Order ':'Reservation ')+code(pending.id);
+      const waMsg=encodeURIComponent('Halo Homeslice, ini bukti transfer untuk '+label+' (DP '+fmt(pending.amount)+').');
+      setStat('Opening WhatsApp — send your proof there to confirm.',true);
+      window.location.href='https://wa.me/'+WA+'?text='+waMsg;
+      return;
+    }
+    const file=input&&input.files&&input.files[0]; if(!file) return;
+    setStat('Uploading…',false);
+    const ext=((file.type.split('/')[1])||'jpg').replace('jpeg','jpg');
+    const path=pending.kind+'s/'+pending.id+'-'+Date.now()+'.'+ext;
     const up=await fetch(STORAGE+'/object/private-proofs/'+path,{method:'POST',headers:{...HEAD,'Content-Type':file.type||'image/jpeg'},body:file});
     if(!up.ok) throw new Error('upload '+up.status);
-    await rpc('attach_payment_proof',{kind,id,url:path});
-    stat.textContent='✓ Proof received — we’ll confirm shortly. Thank you!'; stat.classList.add('ok2');
-  }catch(e){ stat.textContent='Upload failed — please send it on WhatsApp instead.'; }
+    await rpc('attach_payment_proof',{kind:pending.kind,id:pending.id,url:path});
+    setStat('✓ Proof received — we’ll confirm shortly. Thank you!',true);
+  }catch(e){ setStat('Something went wrong — please try again or use WhatsApp.',false); }
 }
 
 /* ---------- boot ---------- */
 let toastT;
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2000); }
 $('rDate').value=new Date().toISOString().slice(0,10);
-loadMenu().then(refreshTables);
+loadMenu().then(()=>refreshTablesGeneric('rDate','rTime','rParty','tableList','reserve'));
 </script>
 </body>
 </html>
