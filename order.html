@@ -46,6 +46,7 @@ a{color:inherit;text-decoration:none}
   font-family:var(--ff);color:var(--gld);font-size:2rem}
 .bd{padding:.85rem;display:flex;flex-direction:column;gap:.25rem;flex:1}
 .badge{align-self:flex-start;font-size:.54rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gld);border:1px solid var(--line);padding:.1rem .45rem;border-radius:99px}
+.leftbadge{display:inline-block;font-size:.62rem;font-weight:600;letter-spacing:.04em;color:var(--gld2);background:rgba(201,147,74,.12);border:1px solid var(--line);padding:.08rem .4rem;border-radius:99px;margin:.15rem 0 .1rem}
 .nm{font-family:var(--ff);font-size:1.18rem;font-weight:600;line-height:1.1}
 .ds{color:var(--crm2);font-size:.78rem;min-height:1em}
 .rw{display:flex;align-items:center;justify-content:space-between;margin-top:.3rem}
@@ -239,6 +240,7 @@ let BRANCH_ID=null, taxPct=0, svcPct=0, allItems=[], activeCat=null, orderType='
 const tableSel={reserve:null, order:null}; // chosen table per flow
 const cart = new Map(); // "itemId:optId" -> {catalog_item_id, option_id, name, variant_name, price, qty}
 const CART_CACHE_KEY='hs_order_cache_v1', CART_TTL=15*60*1000; // keep the customer's in-progress order for 15 min
+const LOW_STOCK=10; // show "Only X left" when makeable units <= this
 
 async function getJSON(path){ const r=await fetch(REST+path,{headers:HEAD}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
 async function rpc(fn, payload){
@@ -265,13 +267,17 @@ async function loadMenu(){
     ]);
     const s = settings[0]||{}; taxPct=+s.default_tax_pct||0; svcPct=+s.default_service_pct||0; BRANCH_ID=s.branch_id||null;
     // Items whose recipe can't be made from current Storage stock → sold out.
-    const outSet = new Set((avail||[]).filter(a=>a.in_stock===false).map(a=>a.catalog_item_id));
+    // max_producible = units still makeable (null = no recipe / unlimited).
+    const availArr = avail||[];
+    const outSet = new Set(availArr.filter(a=>a.in_stock===false).map(a=>a.catalog_item_id));
+    const leftMap = {}; availArr.forEach(a=>{ if(a.max_producible!=null) leftMap[a.catalog_item_id]=a.max_producible; });
     const catName={}; cats.forEach(c=>catName[c.id]=c.name);
     allItems = items.map(i=>{
       const variants=(i.catalog_item_options||[]).filter(o=>VARIANT_GROUPS.has(o.option_group))
         .map(o=>({id:o.id,name:o.name,price:(Number(i.price)||0)+(Number(o.price_delta)||0)}));
       return {id:i.id,name:i.name,price:Number(i.price)||0,category:catName[i.category_id]||'Menu',
-        desc:(i.metadata&&i.metadata.description)||'',photo:i.photo_url||'',variants,out:outSet.has(i.id)};
+        desc:(i.metadata&&i.metadata.description)||'',photo:i.photo_url||'',variants,
+        out:outSet.has(i.id),left:(i.id in leftMap)?leftMap[i.id]:null};
     }).filter(i=>i.price>0||i.variants.length>0);
     buildCats(); renderMenu();
   }catch(e){ $('menu').innerHTML='<div class="empty">Could not load the menu. Please try again.</div>'; }
@@ -304,10 +310,12 @@ function cardHTML(i){
   if(hasV){
     below='<div class="vars">'+i.variants.map(v=>`<button class="vbtn" onclick="addToCart('${i.id}','${v.id}')"><span>${esc(v.name)}</span><b>${fmt(v.price)}</b></button>`).join('')+'</div>';
   }
+  // low-stock urgency hint when only a few units are still makeable
+  const low=(i.left!=null && i.left>0 && i.left<=LOW_STOCK) ? `<span class="leftbadge">Only ${i.left} left</span>` : '';
   const addBtn=hasV?'':`<button class="add" onclick="addToCart('${i.id}')">Add</button>`;
   return `<div class="card"><div class="ph" ${img}>${i.photo?'':initial}</div>
     <div class="bd"><div class="nm">${esc(i.name)}</div>
-      <div class="ds">${esc(i.desc)}</div>
+      <div class="ds">${esc(i.desc)}</div>${low}
       <div class="rw"><span class="price">${priceTxt}</span>${addBtn}</div>${below}</div></div>`;
 }
 
