@@ -52,7 +52,7 @@ a{color:inherit;text-decoration:none}
 .floorplan{position:relative;width:100%;min-width:640px;aspect-ratio:1762/700;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:.3rem}
 .froom{position:absolute;border:1px solid var(--line);background:rgba(255,255,255,.05);border-radius:6px}
 .fline{position:absolute;border-top:1px solid var(--line);opacity:.55}
-.fbar{position:absolute;left:0;top:29%;width:28%;height:5%;background:#6f6f6f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.68rem;letter-spacing:.18em;font-weight:700;border-radius:3px;z-index:2}
+.fbar{position:absolute;left:1%;top:28%;width:25%;height:5.5%;background:#6f6f6f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.68rem;letter-spacing:.18em;font-weight:700;border-radius:3px;z-index:2}
 .fzone{position:absolute;font-size:.62rem;letter-spacing:.14em;color:var(--crm2);opacity:.45;font-weight:700;z-index:1}
 .ftable{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:5px;border:1px solid var(--line);overflow:hidden;padding:1px;text-align:center;line-height:1.05;z-index:3}
 .ftable .fn{font-weight:700;font-size:.82rem}
@@ -460,13 +460,13 @@ function resetOrder(){
    O# = outdoor. Availability comes from public_floor_plan (all tables + a free
    flag for the chosen slot). */
 const FLOOR_POS = {
-  'BAR 1':{x:12.2,y:37.5,w:3.6,h:8}, 'BAR 2':{x:24.3,y:37.5,w:3.6,h:8},
-  'B3':{x:10.5,y:49,w:6.8,h:18}, 'B1':{x:22.1,y:50,w:6.8,h:18},
-  'B4':{x:10.5,y:75,w:6.8,h:18}, 'B2':{x:22.1,y:75,w:6.8,h:18},
-  'I2':{x:42.5,y:6.9,w:6.1,h:15}, 'I1':{x:61.2,y:6.9,w:5.4,h:15},
-  'I4':{x:42.8,y:33,w:5.7,h:34}, 'I3':{x:57.8,y:43.6,w:12,h:16.4},
-  'T2':{x:42.5,y:78,w:8.3,h:14.6}, 'T1':{x:61.2,y:78,w:8.3,h:14.6},
-  'BC 2':{x:76.6,y:33,w:5.7,h:17}, 'BC 1':{x:89.8,y:49,w:5.7,h:16.4}
+  'BAR 1':{x:6,y:35,w:5,h:8.5}, 'BAR 2':{x:18,y:35,w:5,h:8.5},
+  'B3':{x:4,y:52,w:9.5,h:20}, 'B1':{x:17,y:52,w:9.5,h:20},
+  'B4':{x:4,y:76,w:9.5,h:20}, 'B2':{x:17,y:76,w:9.5,h:20},
+  'I2':{x:37,y:7,w:8,h:18}, 'I1':{x:53,y:7,w:8,h:18},
+  'I4':{x:37,y:33,w:7,h:35}, 'I3':{x:49,y:42,w:13,h:18},
+  'T2':{x:37,y:80,w:11,h:15}, 'T1':{x:51,y:80,w:11,h:15},
+  'BC 2':{x:71,y:25,w:10,h:21}, 'BC 1':{x:84,y:46,w:9.5,h:19}
 };
 // tables whose selection needs a heads-up note shown to the customer
 const TABLE_NOTES = { 'BC 1':'📚 Book Corner — no air-conditioning (open-air reading nook).',
@@ -500,17 +500,17 @@ function floorPlanHTML(tables, selKey){
     const click=avail?` onclick="pickFloorTable(this,'${selKey}','${t.id}','${esc(name)}')"`:'';
     tiles+=`<div class="${cls}" title="${title}" style="left:${p.x}%;top:${p.y}%;width:${p.w}%;height:${p.h}%"${click}><span class="fn">${esc(short)}</span>${capTxt}</div>`;
   }
-  const rooms='<div class="froom" style="left:0;top:29%;width:31%;height:71%"></div>'+      // bar / bale
-    '<div class="froom" style="left:39.7%;top:0;width:33.5%;height:73%"></div>'+           // indoor
-    '<div class="froom" style="left:39.7%;top:73%;width:33.5%;height:27%"></div>'+         // terrace
-    '<div class="froom" style="left:73.5%;top:13%;width:13%;height:60%"></div>'+           // book corner
-    '<div class="froom" style="left:84.5%;top:42%;width:15.5%;height:31%"></div>';         // book corner (far)
-  const lines='<div class="fline" style="left:39.7%;top:28.6%;width:33.5%"></div>';        // indoor divider
+  const rooms='<div class="froom" style="left:0;top:27%;width:30%;height:19%"></div>'+      // BAR room (separate)
+    '<div class="froom" style="left:0;top:46%;width:30%;height:54%"></div>'+               // bale
+    '<div class="froom" style="left:34%;top:0;width:30%;height:73%"></div>'+               // indoor
+    '<div class="froom" style="left:34%;top:73%;width:30%;height:27%"></div>'+             // terrace
+    '<div class="froom" style="left:67%;top:15%;width:31%;height:58%"></div>';             // book corner (BC1+BC2, one square)
+  const lines='<div class="fline" style="left:34%;top:28%;width:30%"></div>';              // indoor divider
   const deco=rooms+lines+'<div class="fbar">BAR</div>'+
-    '<div class="fzone" style="left:5%;top:33%">BALE</div>'+
-    '<div class="fzone" style="left:52%;top:1.5%">INDOOR</div>'+
-    '<div class="fzone" style="left:50%;top:95%">TERRACE</div>'+
-    '<div class="fzone" style="left:74%;top:8%">BOOK CORNER</div>';
+    '<div class="fzone" style="left:3%;top:48%">BALE</div>'+
+    '<div class="fzone" style="left:45%;top:1.5%">INDOOR</div>'+
+    '<div class="fzone" style="left:44%;top:95%">TERRACE</div>'+
+    '<div class="fzone" style="left:70%;top:17%">BOOK CORNER</div>';
   return `<div class="floorwrap"><div class="floorplan">${deco}${tiles}</div>
     <div class="flegend"><span class="lg free"></span>Available<span class="lg taken"></span>Taken — tap a green table to pick it</div>
     <div class="fnote" style="display:none"></div></div>`;
