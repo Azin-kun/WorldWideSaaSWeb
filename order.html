@@ -48,12 +48,15 @@ a{color:inherit;text-decoration:none}
 .badge{align-self:flex-start;font-size:.54rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gld);border:1px solid var(--line);padding:.1rem .45rem;border-radius:99px}
 .leftbadge{display:inline-block;font-size:.62rem;font-weight:600;letter-spacing:.04em;color:var(--gld2);background:rgba(201,147,74,.12);border:1px solid var(--line);padding:.08rem .4rem;border-radius:99px;margin:.15rem 0 .1rem}
 /* ---- floor-plan table picker ---- */
-.floorplan{position:relative;width:100%;aspect-ratio:1762/700;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:.3rem}
-.fbar{position:absolute;left:0;top:29%;width:28%;height:5%;background:#6f6f6f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.62rem;letter-spacing:.18em;font-weight:700;border-radius:3px}
-.fzone{position:absolute;font-size:.58rem;letter-spacing:.14em;color:var(--crm2);opacity:.4;font-weight:700}
-.ftable{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:5px;border:1px solid var(--line);overflow:hidden;padding:1px;text-align:center;line-height:1.02}
-.ftable .fn{font-weight:700;font-size:.66rem}
-.ftable .fc{font-size:.56rem;opacity:.85}
+.floorwrap{width:100%;overflow-x:auto}
+.floorplan{position:relative;width:100%;min-width:640px;aspect-ratio:1762/700;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:.3rem}
+.froom{position:absolute;border:1px solid var(--line);background:rgba(255,255,255,.05);border-radius:6px}
+.fline{position:absolute;border-top:1px solid var(--line);opacity:.55}
+.fbar{position:absolute;left:0;top:29%;width:28%;height:5%;background:#6f6f6f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.68rem;letter-spacing:.18em;font-weight:700;border-radius:3px;z-index:2}
+.fzone{position:absolute;font-size:.62rem;letter-spacing:.14em;color:var(--crm2);opacity:.45;font-weight:700;z-index:1}
+.ftable{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:5px;border:1px solid var(--line);overflow:hidden;padding:1px;text-align:center;line-height:1.05;z-index:3}
+.ftable .fn{font-weight:700;font-size:.82rem}
+.ftable .fc{font-size:.66rem;opacity:.85}
 .ftable.free{background:rgba(127,224,160,.18);border-color:#7fe0a0;color:var(--crm);cursor:pointer}
 .ftable.free:hover{background:rgba(127,224,160,.34)}
 .ftable.taken{background:rgba(120,120,120,.22);color:var(--crm2);opacity:.5}
@@ -490,7 +493,13 @@ function floorPlanHTML(tables, selKey){
     const click=avail?` onclick="pickFloorTable(this,'${selKey}','${t.id}','${esc(name)}')"`:'';
     tiles+=`<div class="${cls}" title="${title}" style="left:${p.x}%;top:${p.y}%;width:${p.w}%;height:${p.h}%"${click}><span class="fn">${esc(short)}</span>${capTxt}</div>`;
   }
-  const deco='<div class="fbar">BAR</div>'+
+  const rooms='<div class="froom" style="left:0;top:30%;width:38%;height:70%"></div>'+      // bar / bale
+    '<div class="froom" style="left:39%;top:0;width:33%;height:74%"></div>'+               // indoor
+    '<div class="froom" style="left:73%;top:14%;width:13.5%;height:43%"></div>'+           // indoor (right)
+    '<div class="froom" style="left:85%;top:43%;width:15%;height:34%"></div>'+             // indoor (far right)
+    '<div class="froom" style="left:39%;top:74%;width:33%;height:26%"></div>';             // outdoor
+  const lines='<div class="fline" style="left:39%;top:27%;width:33%"></div>';              // indoor divider
+  const deco=rooms+lines+'<div class="fbar">BAR</div>'+
     '<div class="fzone" style="left:5%;top:34%">BALE</div>'+
     '<div class="fzone" style="left:52%;top:1.5%">INDOOR</div>'+
     '<div class="fzone" style="left:47%;top:94%">OUTDOOR</div>';
