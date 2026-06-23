@@ -47,6 +47,20 @@ a{color:inherit;text-decoration:none}
 .bd{padding:.85rem;display:flex;flex-direction:column;gap:.25rem;flex:1}
 .badge{align-self:flex-start;font-size:.54rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gld);border:1px solid var(--line);padding:.1rem .45rem;border-radius:99px}
 .leftbadge{display:inline-block;font-size:.62rem;font-weight:600;letter-spacing:.04em;color:var(--gld2);background:rgba(201,147,74,.12);border:1px solid var(--line);padding:.08rem .4rem;border-radius:99px;margin:.15rem 0 .1rem}
+/* ---- floor-plan table picker ---- */
+.floorplan{position:relative;width:100%;aspect-ratio:1762/700;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:.3rem}
+.fbar{position:absolute;left:0;top:29%;width:28%;height:5%;background:#6f6f6f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.62rem;letter-spacing:.18em;font-weight:700;border-radius:3px}
+.fzone{position:absolute;font-size:.58rem;letter-spacing:.14em;color:var(--crm2);opacity:.4;font-weight:700}
+.ftable{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:5px;border:1px solid var(--line);overflow:hidden;padding:1px;text-align:center;line-height:1.02}
+.ftable .fn{font-weight:700;font-size:.66rem}
+.ftable .fc{font-size:.56rem;opacity:.85}
+.ftable.free{background:rgba(127,224,160,.18);border-color:#7fe0a0;color:var(--crm);cursor:pointer}
+.ftable.free:hover{background:rgba(127,224,160,.34)}
+.ftable.taken{background:rgba(120,120,120,.22);color:var(--crm2);opacity:.5}
+.ftable.sel{background:var(--gld);border-color:var(--gld2);color:var(--esp);box-shadow:0 0 0 2px var(--gld)}
+.flegend{display:flex;align-items:center;gap:.4rem;font-size:.7rem;color:var(--crm2);margin-top:.5rem;flex-wrap:wrap}
+.flegend .lg{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid var(--line)}
+.flegend .lg.free{background:rgba(127,224,160,.55)}.flegend .lg.taken{background:rgba(120,120,120,.5)}
 .nm{font-family:var(--ff);font-size:1.18rem;font-weight:600;line-height:1.1}
 .ds{color:var(--crm2);font-size:.78rem;min-height:1em}
 .rw{display:flex;align-items:center;justify-content:space-between;margin-top:.3rem}
@@ -436,26 +450,58 @@ function resetOrder(){
   closeCart();
 }
 
-/* ---------- real-time table availability (shared by reserve + dine-in) ---------- */
+/* ---------- real-time floor-plan table picker (shared by reserve + dine-in) ----
+   Tables are drawn at their real positions (% of a 1762×700 canvas) matching
+   the venue floor plan. Names: "Bar 1-4" = bar stools, B# = bale, I# = indoor,
+   O# = outdoor. Availability comes from public_floor_plan (all tables + a free
+   flag for the chosen slot). */
+const FLOOR_POS = {
+  'Bar 1':{x:6.7,y:38,w:2.4,h:5.2}, 'Bar 2':{x:11,y:38,w:2.4,h:5.2},
+  'Bar 3':{x:15.3,y:38,w:2.4,h:5.2}, 'Bar 4':{x:19.6,y:38,w:2.4,h:5.2},
+  'B3':{x:4.3,y:49,w:7,h:18}, 'B1':{x:27.5,y:43,w:6.6,h:17}, 'B2':{x:27.5,y:74,w:6.3,h:18},
+  'I1':{x:42.5,y:7,w:6.2,h:15}, 'I2':{x:61,y:7,w:5.5,h:15}, 'I3':{x:42.9,y:34,w:5.8,h:33},
+  'I4':{x:57.6,y:44,w:12.2,h:16}, 'I5':{x:76.6,y:34,w:5.8,h:16}, 'I6':{x:89.7,y:50,w:5.8,h:16},
+  'O1':{x:42.5,y:78,w:8.4,h:15}, 'O2':{x:61.6,y:78,w:8.3,h:15}
+};
 function resInfo(t){ return '<span class="empty" style="padding:0;font-size:.82rem">'+t+'</span>'; }
 async function refreshTablesGeneric(dateId,timeId,partyId,listId,selKey){
   tableSel[selKey]=null;
   const el=$(listId);
   const date=$(dateId).value, time=$(timeId).value||'19:00';
   const start=date?new Date(date+'T'+time):null;
-  if(!start||!BRANCH_ID){ el.innerHTML=resInfo('Pick a date &amp; time to see free tables.'); return; }
+  if(!start||!BRANCH_ID){ el.innerHTML=resInfo('Pick a date &amp; time to see the floor plan.'); return; }
   const party=Math.max(parseInt($(partyId).value||'2',10)||2,1);
   el.innerHTML=resInfo('Checking availability…');
   try{
-    const tables=await rpc('public_available_tables',{branch_id:BRANCH_ID,start_time:start.toISOString(),party_size:party});
-    if(!tables||!tables.length){ el.innerHTML=resInfo('No tables free for that slot — we’ll confirm by phone.'); return; }
-    el.innerHTML=tables.map(t=>`<button type="button" class="vbtn" data-id="${t.id}" data-name="${esc(t.name)}" onclick="pickTableGeneric(this,'${listId}','${selKey}')"><span>${esc(t.name)}</span><b>${t.capacity} pax</b></button>`).join('');
-  }catch(e){ el.innerHTML=resInfo('Couldn’t load tables — you can still send the request.'); }
+    const tables=await rpc('public_floor_plan',{branch_id:BRANCH_ID,start_time:start.toISOString(),party_size:party});
+    el.innerHTML=floorPlanHTML(tables||[], selKey);
+  }catch(e){ el.innerHTML=resInfo('Couldn’t load the floor plan — you can still send the request.'); }
 }
-function pickTableGeneric(el,listId,selKey){
-  tableSel[selKey]={id:el.dataset.id,name:el.dataset.name};
-  document.querySelectorAll('#'+listId+' .vbtn').forEach(b=>{ b.style.borderColor=''; b.style.background=''; });
-  el.style.borderColor='var(--gld)'; el.style.background='rgba(201,147,74,.16)';
+function floorPlanHTML(tables, selKey){
+  const by={}; tables.forEach(t=>by[t.name]=t);
+  let tiles='';
+  for(const name in FLOOR_POS){
+    const p=FLOOR_POS[name], t=by[name];
+    const cap=t?t.capacity:null, avail=t?!!t.available:false;
+    const short=name.indexOf('Bar ')===0?name.slice(4):name;
+    const capTxt=(cap&&cap>1)?`<span class="fc">${cap}p</span>`:'';
+    const cls='ftable'+(avail?' free':' taken');
+    const title=esc(name)+' · '+(cap?cap+' pax':'')+(avail?'':' (taken)');
+    const click=avail?` onclick="pickFloorTable(this,'${selKey}','${t.id}','${esc(name)}')"`:'';
+    tiles+=`<div class="${cls}" title="${title}" style="left:${p.x}%;top:${p.y}%;width:${p.w}%;height:${p.h}%"${click}><span class="fn">${esc(short)}</span>${capTxt}</div>`;
+  }
+  const deco='<div class="fbar">BAR</div>'+
+    '<div class="fzone" style="left:5%;top:34%">BALE</div>'+
+    '<div class="fzone" style="left:52%;top:1.5%">INDOOR</div>'+
+    '<div class="fzone" style="left:47%;top:94%">OUTDOOR</div>';
+  return `<div class="floorwrap"><div class="floorplan">${deco}${tiles}</div>
+    <div class="flegend"><span class="lg free"></span>Available<span class="lg taken"></span>Taken — tap a green table to pick it</div></div>`;
+}
+function pickFloorTable(el, selKey, id, name){
+  tableSel[selKey]={id:id, name:name};
+  const plan=el.closest('.floorplan');
+  if(plan) plan.querySelectorAll('.ftable.sel').forEach(t=>t.classList.remove('sel'));
+  el.classList.add('sel');
 }
 
 /* ---------- reservation ---------- */
