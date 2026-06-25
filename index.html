@@ -8,7 +8,7 @@
 <meta content="Homeslice Eatery &amp; Bistro in Solo (Surakarta). Western classics &amp; honest home cooking in a warm, low-lit room made for long lunches. No Pork · No Lard." name="description"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&amp;family=Montserrat:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&amp;family=Montserrat:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet" id="gfonts"/>
 <style>
 :root{
   --esp:#160A06;--brn:#2C1810;--brn2:#4A2A18;
@@ -1365,6 +1365,42 @@ body{min-height:100svh;height:100svh;overflow:hidden;overscroll-behavior:none}
     }
     hero.insertBefore(wrap,hero.querySelector('.hero-body'));
   }
+})();
+</script>
+<script>
+/* ── data-driven: theme + section prose from Supabase (content seeded; falls
+   back to the static markup so nothing ever goes blank) ── */
+(function(){
+  const REST='https://gfekclkhdrqyncmvnjsn.supabase.co/rest/v1';
+  const KEY='sb_publishable_xwHcysY4WKoxKLXTN4rqng_JEtWUwU6';
+  const HEAD={apikey:KEY,Authorization:'Bearer '+KEY};
+  const esc=s=>String(s==null?'':s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
+  async function getJSON(p){const r=await fetch(REST+p,{headers:HEAD});if(!r.ok)throw 0;return r.json();}
+  async function theme(){
+    try{
+      const rows=await getJSON('/website_theme?select=*&limit=1');if(!rows.length)return;
+      const t=rows[0],st=document.documentElement.style;
+      const map={'--esp':t.color_background,'--brn':t.color_surface,'--brn2':t.color_surface_2,
+        '--gld':t.color_primary,'--gld2':t.color_primary_2,'--crm':t.color_text,
+        '--crm2':t.color_text_muted,'--line':t.color_line,'--ter':t.color_tertiary};
+      for(const k in map)if(map[k])st.setProperty(k,map[k]);
+      if(t.heading_font)st.setProperty('--ff',"'"+t.heading_font+"',Georgia,serif");
+      if(t.body_font)st.setProperty('--fs',"'"+t.body_font+"',system-ui,sans-serif");
+      const gf=document.getElementById('gfonts');if(t.google_fonts_url&&gf)gf.href=t.google_fonts_url;
+      if(t.extra_tokens&&typeof t.extra_tokens==='object')for(const k in t.extra_tokens)if(t.extra_tokens[k])st.setProperty(k,t.extra_tokens[k]);
+    }catch(e){}
+  }
+  const prose=s=>(s||'').split(/\n\n+/).map(p=>'<p>'+esc(p)+'</p>').join('');
+  async function sections(){
+    try{
+      const secs=await getJSON('/website_sections?select=section_key,body');const by={};
+      secs.forEach(s=>by[s.section_key]=s);
+      const story=by.about||by.story,space=by.space;
+      const sb=document.querySelector('.story-body');if(sb&&story&&story.body)sb.innerHTML=prose(story.body);
+      const pb=document.querySelector('.space-body');if(pb&&space&&space.body)pb.innerHTML=prose(space.body);
+    }catch(e){}
+  }
+  theme();sections();
 })();
 </script>
 </body>
