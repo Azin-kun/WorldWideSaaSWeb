@@ -1395,9 +1395,10 @@ body{min-height:100svh;height:100svh;overflow:hidden;overscroll-behavior:none}
     try{
       const secs=await getJSON('/website_sections?select=section_key,body');const by={};
       secs.forEach(s=>by[s.section_key]=s);
-      const story=by.about||by.story,space=by.space;
+      const story=by.about||by.story,space=by.space,hero=by.hero;
       const sb=document.querySelector('.story-body');if(sb&&story&&story.body)sb.innerHTML=prose(story.body);
       const pb=document.querySelector('.space-body');if(pb&&space&&space.body)pb.innerHTML=prose(space.body);
+      const hs=document.querySelector('.hero-sub');if(hs&&hero&&hero.body)hs.textContent=hero.body;
     }catch(e){}
   }
   theme();sections();
