@@ -1253,49 +1253,59 @@ body{min-height:100svh;height:100svh;overflow:hidden;overscroll-behavior:none}
     } else { menu.classList.add('in'); }
   })();
 
-  /* ---------- EXPLORE EVERYTHING — full dish shuffle (2-layer crossfade) ---------- */
+  /* ---------- EXPLORE EVERYTHING — full dish shuffle (2-layer crossfade).
+     [imageURL, name] pairs. The static list below is the pre-load fallback;
+     window.setKitchenShuffle() swaps in live catalog photos once the menu loads. ---------- */
   (function(){
     var box=document.querySelector('.menu-shuffle'); if(!box) return;
     var layers=[].slice.call(box.querySelectorAll('.ms-img'));
     var nameEl=document.getElementById('ms-name');
+    if(layers.length<2) return;
     var dishes=[
-      ['chicken-mushroom-soup','Chicken Mushroom Soup'],
-      ['tomato-puree-soup','Tomato Purée Soup'],
-      ['homeslice-salad','Homeslice Salad'],
-      ['caesar-salad','Caesar Salad'],
-      ['garlic-butter-steak','Garlic Butter Steak'],
-      ['le-boeuf-et-champignon','Le Boeuf et Champignon'],
-      ['homeslice-meatballs','Homeslice Meatballs'],
-      ['beef-wellington','Beef Wellington'],
-      ['roasted-chicken','Roasted Chicken'],
-      ['grilled-chicken-marinara','Grilled Chicken Marinara'],
-      ['chicken-fricassee','Chicken Fricassee'],
-      ['country-burger','Country Burger'],
-      ['carnivore-burger','Carnivore Burger'],
-      ['homeslice-sandwich','Homeslice Sandwich'],
-      ['pide','Pide'],
-      ['pomodoro-pizza','Pomodoro'],
-      ['bianca-pizza','Bianca'],
-      ['margherita-pizza','Margherita'],
-      ['spaghetti','Spaghetti'],
-      ['other-pasta-fresca-secca-ripiena','Pasta Fresca'],
-      ['banana-caramel-toast','Banana Caramel Toast'],
-      ['creamy-red-bean','Creamy Red Beans']
+      ['assets/img/chicken-mushroom-soup.webp','Chicken Mushroom Soup'],
+      ['assets/img/tomato-puree-soup.webp','Tomato Purée Soup'],
+      ['assets/img/homeslice-salad.webp','Homeslice Salad'],
+      ['assets/img/caesar-salad.webp','Caesar Salad'],
+      ['assets/img/garlic-butter-steak.webp','Garlic Butter Steak'],
+      ['assets/img/le-boeuf-et-champignon.webp','Le Boeuf et Champignon'],
+      ['assets/img/homeslice-meatballs.webp','Homeslice Meatballs'],
+      ['assets/img/beef-wellington.webp','Beef Wellington'],
+      ['assets/img/roasted-chicken.webp','Roasted Chicken'],
+      ['assets/img/grilled-chicken-marinara.webp','Grilled Chicken Marinara'],
+      ['assets/img/chicken-fricassee.webp','Chicken Fricassee'],
+      ['assets/img/country-burger.webp','Country Burger'],
+      ['assets/img/carnivore-burger.webp','Carnivore Burger'],
+      ['assets/img/homeslice-sandwich.webp','Homeslice Sandwich'],
+      ['assets/img/pide.webp','Pide'],
+      ['assets/img/pomodoro-pizza.webp','Pomodoro'],
+      ['assets/img/bianca-pizza.webp','Bianca'],
+      ['assets/img/margherita-pizza.webp','Margherita'],
+      ['assets/img/spaghetti.webp','Spaghetti'],
+      ['assets/img/other-pasta-fresca-secca-ripiena.webp','Pasta Fresca'],
+      ['assets/img/banana-caramel-toast.webp','Banana Caramel Toast'],
+      ['assets/img/creamy-red-bean.webp','Creamy Red Beans']
     ];
-    if(layers.length<2 || !dishes.length) return;
-    var idx=0, front=0;
-    layers[0].src='assets/img/'+dishes[0][0]+'.webp';
-    layers[0].classList.add('on');
-    if(nameEl) nameEl.textContent=dishes[0][1];
-    if(reduce) return;
-    setInterval(function(){
-      var next=(idx+1)%dishes.length, back=front^1;
-      layers[back].src='assets/img/'+dishes[next][0]+'.webp';
-      if(nameEl) nameEl.textContent=dishes[next][1];
+    var idx=0, front=0, timer=null;
+    function show(i){
+      var back=front^1;
+      layers[back].src=dishes[i][0];
+      if(nameEl) nameEl.textContent=dishes[i][1];
       layers[back].classList.add('on');
       layers[front].classList.remove('on');
-      front=back; idx=next;
-    },2600);
+      front=back; idx=i;
+    }
+    function start(){
+      if(!dishes.length) return;
+      if(timer){clearInterval(timer);timer=null;}
+      layers.forEach(function(l){l.classList.remove('on');});
+      idx=0; front=0;
+      layers[0].src=dishes[0][0]; layers[0].classList.add('on');
+      if(nameEl) nameEl.textContent=dishes[0][1];
+      if(reduce) return;
+      timer=setInterval(function(){ show((idx+1)%dishes.length); },2600);
+    }
+    window.setKitchenShuffle=function(list){ if(list&&list.length){dishes=list; start();} };
+    start();
   })();
 
   if(!fine || reduce) return; /* pointer effects only when it makes sense */
@@ -1439,7 +1449,7 @@ body{min-height:100svh;height:100svh;overflow:hidden;overscroll-behavior:none}
 
   async function sections(){
     try{
-      const secs=await getJSON('/website_sections?select=section_key,title,body,content');
+      const secs=await getJSON('/website_sections?select=section_key,title,body,image_url,content');
       const by={};secs.forEach(s=>by[s.section_key]=s);
       const hero=by.hero,story=by.about||by.story,space=by.space,contact=by.contact;
       if(hero){setTitle('.hero-title .title-live',hero.title);
@@ -1450,6 +1460,13 @@ body{min-height:100svh;height:100svh;overflow:hidden;overscroll-behavior:none}
       if(space){setTitle('.space-title .title-live',space.title);
         const pb=document.querySelector('.space-body');if(pb&&space.body)pb.innerHTML=prose(space.body);}
       if(contact)setTitle('.loc-title .title-live',contact.title);
+      const brand=by.brand;
+      if(brand){
+        const lg=document.querySelector('.nav-brand img');
+        if(lg&&brand.image_url){lg.src=brand.image_url;if(brand.title)lg.alt=brand.title;}
+        const tg=document.querySelector('.nav-brand-tag');
+        if(tg&&brand.body)tg.textContent=brand.body;
+      }
       applyHours(by.hours);applyContact(contact);
     }catch(e){}
   }
@@ -1492,6 +1509,20 @@ body{min-height:100svh;height:100svh;overflow:hidden;overscroll-behavior:none}
   function tabBtn(name,i,on){
     return '<button aria-controls="mp-'+i+'" aria-selected="'+(!!on)+'" class="menu-tab'+(on?' on':'')+'" onclick="mTab('+i+')" role="tab" type="button">'+esc(name)+'</button>';
   }
+  /* Drinks pane in the compact row layout, grouped by metadata.group
+     (Tea & Coffee / Shakes & Chocolate / Others), each group price-sorted. */
+  function drinksPaneHTML(items,idx){
+    const ORDER=['Tea & Coffee','Shakes & Chocolate','Others'];
+    const groups={};
+    items.forEach(it=>{const g=(it.metadata&&it.metadata.group)||'Drinks';(groups[g]=groups[g]||[]).push(it);});
+    const names=Object.keys(groups).sort((a,b)=>{const ia=ORDER.indexOf(a),ib=ORDER.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)||a.localeCompare(b);});
+    const cats=names.map(g=>{
+      const rows=groups[g].slice().sort((a,b)=>(Number(a.price)||0)-(Number(b.price)||0))
+        .map(it=>'<div class="drink-row"><span>'+esc(it.name)+'</span><strong>'+esc(kfmt(Number(it.price)||0))+'</strong></div>').join('');
+      return '<div class="drink-cat"><div class="drink-cat-name">'+esc(g)+'</div>'+rows+'</div>';
+    }).join('');
+    return '<div class="menu-pane" id="mp-'+idx+'" role="tabpanel"><div class="drinks-grid">'+cats+'</div></div>';
+  }
   async function menu(){
     try{
       const [items,cats]=await Promise.all([
@@ -1499,22 +1530,25 @@ body{min-height:100svh;height:100svh;overflow:hidden;overscroll-behavior:none}
         getJSON('/categories?select=id,name,sort_order&order=sort_order'),
       ]);
       if(items.length)enhanceShowcase(items);
+      if(window.setKitchenShuffle){const sh=items.filter(i=>i.photo_url).map(i=>[i.photo_url,i.name]);if(sh.length)window.setKitchenShuffle(sh);}
       const tabs=document.getElementById('mtabs');
       if(!tabs||!items.length||!cats.length)return;
       const byCat=new Map();cats.forEach(c=>byCat.set(c.id,{name:c.name,items:[]}));
       items.forEach(it=>{const g=byCat.get(it.category_id);if(g)g.items.push(it);});
-      // Food categories (those with catalog items). The Drinks category is
-      // excluded here — its curated tab/pane is preserved as the last tab even
-      // once drinks exist as catalog items (so seeding them for online ordering
-      // never double-renders the Drinks tab on the landing).
+      // Food categories (those with catalog items). Drinks are handled separately:
+      // rendered from the catalog (compact grouped layout) when present, else the
+      // curated static pane is kept. Either way Drinks is always the last tab.
       const cols=[...byCat.values()].filter(g=>g.items.length && !/drink|beverage/i.test(g.name));
       if(!cols.length)return;
-      const drinksPaneEl=document.querySelector('.drinks-grid')?document.querySelector('.drinks-grid').closest('.menu-pane'):null;
-      const drinksTabBtn=[].slice.call(tabs.querySelectorAll('.menu-tab')).find(b=>/drink/i.test(b.textContent));
-      const drinksName=drinksTabBtn?drinksTabBtn.textContent.trim():'Drinks';
+      const drinkCat=[...byCat.values()].find(g=>/drink|beverage/i.test(g.name) && g.items.length);
+      const staticDrinks=document.querySelector('.drinks-grid')?document.querySelector('.drinks-grid').closest('.menu-pane'):null;
+      const staticTab=[].slice.call(tabs.querySelectorAll('.menu-tab')).find(b=>/drink/i.test(b.textContent));
+      const hasDrinks=!!drinkCat||!!staticDrinks;
+      const drinksName=drinkCat?drinkCat.name:(staticTab?staticTab.textContent.trim():'Drinks');
+      const drinkIdx=cols.length;
 
       let tabHTML=cols.map((g,i)=>tabBtn(g.name,i,i===0));
-      if(drinksPaneEl)tabHTML.push(tabBtn(drinksName,cols.length,false));
+      if(hasDrinks)tabHTML.push(tabBtn(drinksName,drinkIdx,false));
       tabs.innerHTML=tabHTML.join('');
 
       const paneHTML=cols.map((g,i)=>{
@@ -1530,11 +1564,18 @@ body{min-height:100svh;height:100svh;overflow:hidden;overscroll-behavior:none}
         return '<div class="menu-pane'+(i===0?' on':'')+'" id="mp-'+i+'" role="tabpanel"><div class="menu-grid">'+cards+fill+'</div></div>';
       }).join('');
 
-      // Drop the old food panes, keep the static Drinks pane, insert new ones
-      // before it so positional index lines up with the rebuilt tabs (mTab).
-      [].slice.call(document.querySelectorAll('.menu-pane')).forEach(p=>{if(p!==drinksPaneEl)p.remove();});
+      // Drop the old food panes (keep the static Drinks pane for now), insert
+      // the rebuilt food panes, then place the Drinks pane LAST so its positional
+      // index lines up with the rebuilt tabs (mTab is index-based).
+      [].slice.call(document.querySelectorAll('.menu-pane')).forEach(p=>{if(p!==staticDrinks)p.remove();});
       tabs.insertAdjacentHTML('afterend',paneHTML);
-      if(drinksPaneEl){drinksPaneEl.classList.remove('on');drinksPaneEl.id='mp-'+cols.length;}
+      if(drinkCat){
+        if(staticDrinks)staticDrinks.remove();
+        const mi=document.querySelector('.menu-inner');
+        if(mi)mi.insertAdjacentHTML('beforeend',drinksPaneHTML(drinkCat.items,drinkIdx));
+      }else if(staticDrinks){
+        staticDrinks.classList.remove('on');staticDrinks.id='mp-'+drinkIdx;
+      }
       tabs.addEventListener('click',e=>{if(e.target.closest('.menu-tab'))setTimeout(staggerActive,0);});
     }catch(e){}
   }
