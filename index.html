@@ -166,8 +166,10 @@ body{background:var(--esp);color:var(--crm);font-family:var(--fs);overflow:hidde
 .menu-item:hover .mi-photo img{transform:scale(1.06)}
 .mi-name{font-family:var(--ff);font-size:1.3rem;font-weight:600;line-height:1.1;color:var(--crm);margin-bottom:.3rem}
 .mi-desc{font-size:.72rem;color:rgba(250,246,239,.5);line-height:1.6}
-.mi-foot{display:flex;align-items:center;justify-content:space-between;margin-top:.7rem}
+.mi-foot{display:flex;align-items:center;justify-content:flex-end;margin-top:.7rem}
 .mi-price{font-family:var(--ff);font-size:1.1rem;color:var(--gld)}
+/* Prices live on the order page only — hide every price on the landing. */
+.mi-price,.sig-price,.car-dish-price,.drink-row strong{display:none!important}
 .mi-order{font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(250,246,239,.4);text-decoration:none;border:1px solid var(--line);padding:.3rem .7rem;transition:all .3s}
 .mi-order:hover{color:var(--gld);border-color:var(--gld)}
 .drinks-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2rem;padding:1rem 0}
