@@ -89,6 +89,7 @@ a{color:inherit;text-decoration:none}
   border-radius:4px;color:var(--crm);font-family:var(--fs);font-size:.92rem}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gld)}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+.advnote{font-size:.72rem;color:var(--crm2);line-height:1.4;margin:-.35rem 0 .75rem}
 .seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-bottom:.85rem}
 .seg .opt{flex:1;text-align:center;padding:.65rem;cursor:pointer;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--crm2)}
 .seg .opt.on{background:var(--gld);color:var(--esp)}
@@ -170,9 +171,10 @@ a{color:inherit;text-decoration:none}
       <div class="field"><label>Name</label><input id="rName" type="text" placeholder="Your name"/></div>
       <div class="field"><label>Phone / WhatsApp</label><input id="rPhone" type="tel" placeholder="08…"/></div>
       <div class="row2">
-        <div class="field"><label>Date</label><input id="rDate" type="date" onchange="refreshTablesGeneric('rDate','rTime','rParty','tableList','reserve')"/></div>
-        <div class="field"><label>Time</label><input id="rTime" type="time" value="19:00" onchange="refreshTablesGeneric('rDate','rTime','rParty','tableList','reserve')"/></div>
+        <div class="field"><label>Date</label><input id="rDate" type="date" onchange="fillTime('rDate','rTime');refreshTablesGeneric('rDate','rTime','rParty','tableList','reserve')"/></div>
+        <div class="field"><label>Time</label><select id="rTime" onchange="refreshTablesGeneric('rDate','rTime','rParty','tableList','reserve')"></select></div>
       </div>
+      <div class="advnote">Website orders must be made at least 1 hour in advance ~ <i>Pemesanan via website minimum 1 jam sebelumnya</i></div>
       <div class="field"><label>Party size</label>
         <select id="rParty" onchange="refreshTablesGeneric('rDate','rTime','rParty','tableList','reserve')"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
       </div>
@@ -212,9 +214,10 @@ a{color:inherit;text-decoration:none}
     </div>
     <div id="dineFields" class="hidden">
       <div class="row2">
-        <div class="field"><label>Date</label><input id="oDate" type="date" onchange="refreshTablesGeneric('oDate','oTime','oParty','oTableList','order')"/></div>
-        <div class="field"><label>Time</label><input id="oTime" type="time" value="19:00" onchange="refreshTablesGeneric('oDate','oTime','oParty','oTableList','order')"/></div>
+        <div class="field"><label>Date</label><input id="oDate" type="date" onchange="fillTime('oDate','oTime');refreshTablesGeneric('oDate','oTime','oParty','oTableList','order')"/></div>
+        <div class="field"><label>Time</label><select id="oTime" onchange="refreshTablesGeneric('oDate','oTime','oParty','oTableList','order')"></select></div>
       </div>
+      <div class="advnote">Website orders must be made at least 1 hour in advance ~ <i>Pemesanan via website minimum 1 jam sebelumnya</i></div>
       <div class="field"><label>Party size</label>
         <select id="oParty" onchange="refreshTablesGeneric('oDate','oTime','oParty','oTableList','order')"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
       </div>
@@ -257,7 +260,7 @@ const fmt = n => 'Rp ' + (Number(n)||0).toLocaleString('id-ID');
 const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const code = id => String(id).replace(/-/g,'').slice(0,6).toUpperCase();
 
-let BRANCH_ID=null, taxPct=0, svcPct=0, allItems=[], activeCat=null, orderType='takeaway', pending=null, proofFile=null;
+let BRANCH_ID=null, taxPct=0, svcPct=0, allItems=[], activeCat=null, orderType='takeaway', pending=null, proofFile=null, OPEN_HOURS={};
 const tableSel={reserve:null, order:null}; // chosen table per flow
 const cart = new Map(); // "itemId:optId" -> {catalog_item_id, option_id, name, variant_name, price, qty}
 const CART_CACHE_KEY='hs_order_cache_v1', CART_TTL=15*60*1000; // keep the customer's in-progress order for 15 min
@@ -355,7 +358,22 @@ function addToCart(id, optId){
 }
 function changeQty(key,d){ const e=cart.get(key); if(!e) return; e.qty+=d; if(e.qty<=0) cart.delete(key); updateCartBar(); saveCart(); renderCart(); if(cart.size===0) closeCart(); }
 function cartCount(){ let n=0; cart.forEach(e=>n+=e.qty); return n; }
-function calcTotals(){ let sub=0; cart.forEach(e=>sub+=e.price*e.qty); const svc=Math.round(sub*svcPct/100); const tax=Math.round((sub+svc)*taxPct/100); const total=sub+svc+tax; return {sub,svc,tax,total,deposit:Math.round(total/2)}; }
+/* Takeaway packaging, per item ordered (matches create_public_order server-side):
+   Pide Rp 1.700 · regular pizza Rp 3.900 · personal pizza Rp 3.200 · all else Rp 1.700. */
+function pkgUnit(e){
+  const it=allItems.find(i=>i.id===e.catalog_item_id)||{};
+  const nm=it.name||e.name||'', cat=it.category||'';
+  if(/pide/i.test(nm)) return 1700;
+  if(/pizza/i.test(cat)){ if(e.variant_name==='Regular') return 3900; if(e.variant_name==='Personal') return 3200; return 1700; }
+  return 1700;
+}
+function calcTotals(){
+  let sub=0,pkg=0; cart.forEach(e=>{ sub+=e.price*e.qty; pkg+=pkgUnit(e)*e.qty; });
+  const svc=Math.round(sub*svcPct/100); const tax=Math.round((sub+svc)*taxPct/100);
+  const packaging = orderType==='takeaway' ? pkg : 0;
+  const total=sub+svc+tax+packaging;
+  return {sub,svc,tax,packaging,total,deposit:Math.round(total/2)};
+}
 function updateCartBar(){ const n=cartCount(); $('cartCount').textContent=n; $('cartTotal').textContent=fmt(calcTotals().total); $('cartbar').classList.toggle('show', n>0 && !$('paneOrder').classList.contains('hidden')); }
 /* ---------- 15-minute local order cache (per device, no server) ---------- */
 function saveCart(){
@@ -396,7 +414,8 @@ function renderCart(){
     const t=calcTotals();
     html+='<div class="sumrows">'+`<div class="srow"><span>Subtotal</span><span>${fmt(t.sub)}</span></div>`+
       (svcPct?`<div class="srow"><span>Service (${svcPct}%)</span><span>${fmt(t.svc)}</span></div>`:'')+
-      (taxPct?`<div class="srow"><span>Tax / PB1 (${taxPct}%)</span><span>${fmt(t.tax)}</span></div>`:'')+'</div>';
+      (taxPct?`<div class="srow"><span>Tax / PB1 (${taxPct}%)</span><span>${fmt(t.tax)}</span></div>`:'')+
+      (t.packaging?`<div class="srow"><span>Packaging (takeaway)</span><span>${fmt(t.packaging)}</span></div>`:'')+'</div>';
     el.innerHTML=html;
   }
   $('coTotal').textContent=fmt(calcTotals().total);
@@ -410,8 +429,36 @@ function setType(el){
   $('dineFields').classList.toggle('hidden',!dine);
   if(dine){
     if(!$('oDate').value) $('oDate').value=new Date().toISOString().slice(0,10);
+    fillTime('oDate','oTime');
     refreshTablesGeneric('oDate','oTime','oParty','oTableList','order');
   }
+  // packaging only applies to takeaway — refresh the shown totals
+  updateCartBar(); $('coTotal').textContent=fmt(calcTotals().total); saveCart();
+}
+
+/* ---------- open-hours time slots (limit booking to open hours, >=1h ahead) ---------- */
+const DAYKEYS=['sun','mon','tue','wed','thu','fri','sat']; // Date.getDay(): 0=Sun
+function timeSlots(dateStr){
+  if(!dateStr) return [];
+  const wd=DAYKEYS[new Date(dateStr+'T00:00').getDay()];
+  const loaded = OPEN_HOURS && Object.keys(OPEN_HOURS).length;
+  const v = (loaded ? (OPEN_HOURS[wd]||'') : '11:00-22:00').trim(); // default window if hours unavailable
+  if(!v || v.indexOf('-')<0) return [];                  // closed / not set
+  const toMin=t=>{ const p=t.trim().split(':'); return (+p[0])*60+(+(p[1]||0)); };
+  const [o,c]=v.split('-');
+  const start=toMin(o), end=toMin(c)-30;                  // last seating 30 min before close
+  let minMin=-1;
+  if(dateStr===new Date().toISOString().slice(0,10)){ const n=new Date(); minMin=n.getHours()*60+n.getMinutes()+60; } // >=1h ahead today
+  const out=[];
+  for(let t=start;t<=end;t+=30){ if(t<minMin) continue; out.push(String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')); }
+  return out;
+}
+function fillTime(dateId,timeId){
+  const sel=$(timeId), dEl=$(dateId); if(!sel||!dEl) return;
+  const prev=sel.value, slots=timeSlots(dEl.value);
+  if(!slots.length){ sel.innerHTML='<option value="">No times available</option>'; sel.value=''; return; }
+  sel.innerHTML=slots.map(s=>`<option value="${s}">${s}</option>`).join('');
+  sel.value=slots.includes(prev)?prev:slots[0];
 }
 
 // Validate + show the deposit step. Nothing is written to the DB (or Telegram)
@@ -425,8 +472,9 @@ function placeOrder(){
   const dineIn=orderType==='dine_in';
   let resv=null;
   if(dineIn){
-    const date=$('oDate').value, time=$('oTime').value||'19:00';
-    if(!date) return toast('Please pick a date & time for dine-in');
+    const date=$('oDate').value, time=$('oTime').value;
+    if(!date) return toast('Please pick a date for dine-in');
+    if(!time) return toast('No time available — please pick another date');
     const party=Math.max(parseInt($('oParty').value||'2',10)||2,1);
     resv={party, start:new Date(date+'T'+time), table:tableSel.order, dateStr:date, timeStr:time};
   }
@@ -532,8 +580,9 @@ function pickFloorTable(el, selKey, id, name){
 function submitReservation(){
   const name=$('rName').value.trim(); if(!name) return toast('Please enter your name');
   if(!BRANCH_ID) return toast('Reservations are temporarily unavailable');
-  const date=$('rDate').value, time=$('rTime').value||'19:00';
+  const date=$('rDate').value, time=$('rTime').value;
   if(!date) return toast('Please pick a date');
+  if(!time) return toast('No time available — please pick another date');
   const party=Math.max(parseInt($('rParty').value||'2',10)||2,1);
   const start=new Date(date+'T'+time), end=new Date(start.getTime()+90*60000);
   const deposit=50000*party;
@@ -654,8 +703,14 @@ $('rDate').value=new Date().toISOString().slice(0,10);
 // persist the order form as the customer edits it (15-min cache)
 ['cName','cPhone','cNote','oDate','oTime','oParty'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('input', saveCart); });
 loadMenu().then(()=>{ restoreCart(); refreshTablesGeneric('rDate','rTime','rParty','tableList','reserve'); });
-// Header logo from the website 'brand' section (matches index.html nav); static fallback.
-getJSON('/website_sections?select=image_url&section_key=eq.brand').then(r=>{ const u=r&&r[0]&&r[0].image_url; const el=$('brandLogo'); if(u&&el) el.src=u; }).catch(()=>{});
+// Website 'brand' (header logo) + 'hours' (open-hours for the time picker).
+getJSON('/website_sections?select=section_key,image_url,content&section_key=in.(brand,hours)').then(rows=>{
+  (rows||[]).forEach(s=>{
+    if(s.section_key==='brand' && s.image_url){ const el=$('brandLogo'); if(el) el.src=s.image_url; }
+    if(s.section_key==='hours'){ OPEN_HOURS=s.content||{}; }
+  });
+  fillTime('rDate','rTime'); if(orderType==='dine_in') fillTime('oDate','oTime');
+}).catch(()=>{});
 </script>
 </body>
 </html>

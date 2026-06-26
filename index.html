@@ -1425,10 +1425,31 @@ body{min-height:100svh;height:100svh;overflow:hidden;overscroll-behavior:none}
     const rows=ordered(content,'stat');if(!rows.length)return;
     wrap.innerHTML=rows.map(([v,l])=>'<div><div class="num-val">'+esc(v)+'</div><div class="num-lbl">'+esc(l)+'</div></div>').join('');
   }
+  /* Open hours: per-weekday 'HH:MM-HH:MM' (empty = closed) → grouped display,
+     merging days with identical hours into ranges ("Mon–Tue, Thu–Sat 12:00 – 22:00"). */
+  const HDAYS=[['mon','Mon','Monday'],['tue','Tue','Tuesday'],['wed','Wed','Wednesday'],['thu','Thu','Thursday'],['fri','Fri','Friday'],['sat','Sat','Saturday'],['sun','Sun','Sunday']];
+  function dayRanges(idxs){
+    const parts=[];let s=idxs[0],p=idxs[0];
+    for(let k=1;k<=idxs.length;k++){
+      if(k<idxs.length&&idxs[k]===p+1){p=idxs[k];continue;}
+      parts.push(s===p?HDAYS[s][2]:HDAYS[s][1]+'–'+HDAYS[p][1]);
+      if(k<idxs.length){s=idxs[k];p=idxs[k];}
+    }
+    return parts.join(', ');
+  }
   function applyHours(sec){
     const el=document.getElementById('locHours');if(!el||!sec)return;
-    let rows=ordered(sec.content,'day');
-    if(!rows.length&&sec.content)rows=Object.keys(sec.content).map(k=>[k,sec.content[k]]); // legacy flat map
+    const c=sec.content||{};
+    if(HDAYS.some(d=>c[d[0]]!=null)){
+      const groups={},order=[];
+      HDAYS.forEach((d,i)=>{const key=(c[d[0]]||'').trim()||'__closed__';if(!groups[key]){groups[key]=[];order.push(key);}groups[key].push(i);});
+      order.sort((a,b)=>Math.min(...groups[a])-Math.min(...groups[b]));
+      const fmtHrs=v=>{const x=v.split('-');return esc(x[0].trim())+' – '+esc((x[1]||'').trim());};
+      el.innerHTML=order.map(key=>dayRanges(groups[key].sort((a,b)=>a-b))+' &nbsp; '+(key==='__closed__'?'Closed':fmtHrs(key))).join('<br>');
+      return;
+    }
+    let rows=ordered(c,'day'); // legacy fallback
+    if(!rows.length)rows=Object.keys(c).map(k=>[k,c[k]]);
     if(!rows.length)return;
     el.innerHTML=rows.map(([l,v])=>esc(l)+' &nbsp; '+esc(v)).join('<br>');
   }
