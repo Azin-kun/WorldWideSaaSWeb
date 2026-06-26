@@ -860,7 +860,7 @@ body{min-height:100svh;height:100svh;overflow:hidden;overscroll-behavior:none}
 </div>
 </div>
 <!-- Slide: Pomodoro -->
-<div class="car-slide" onclick="openLB(this.querySelector('img'))">
+<div class="car-slide" data-dish="Pomodoro" onclick="openLB(this.querySelector('img'))">
 <img alt="Pomodoro Pizza" decoding="async" loading="lazy" src="assets/img/pomodoro-pizza.webp"/>
 <div class="car-overlay"></div>
 <div class="car-info">
@@ -1016,7 +1016,7 @@ body{min-height:100svh;height:100svh;overflow:hidden;overscroll-behavior:none}
 <section class="sec sec-loc" data-idx="7">
 <!-- Full embedded map (left 50%) -->
 <div class="loc-map">
-<iframe allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d990.37!2d110.7899394!3d-7.5600626!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e7a156278d89c59%3A0x47d207216d8defb4!2sHomeslice%20Eatery%20and%20Bistro!5e0!3m2!1sen!2sid!4v1748654321000!5m2!1sen!2sid" title="Homeslice Eatery and Bistro location map">
+<iframe id="locMapBig" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d990.37!2d110.7899394!3d-7.5600626!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e7a156278d89c59%3A0x47d207216d8defb4!2sHomeslice%20Eatery%20and%20Bistro!5e0!3m2!1sen!2sid!4v1748654321000!5m2!1sen!2sid" title="Homeslice Eatery and Bistro location map">
 </iframe>
 </div>
 <!-- Info column (right 46%) -->
@@ -1025,16 +1025,16 @@ body{min-height:100svh;height:100svh;overflow:hidden;overscroll-behavior:none}
 <h2 class="loc-title"><span class="title-live">Come as<br/>you are.</span></h2>
 <div class="loc-row">
 <div class="loc-lbl">Address</div>
-<div class="loc-val">Jl. Kutilang No.8, Kerten<br/>Laweyan, Surakarta</div>
+<div class="loc-val" id="locAddress">Jl. Kutilang No.8, Kerten<br/>Laweyan, Surakarta</div>
 <!-- Mini map -->
 <div class="mini-map">
-<iframe loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d496!2d110.7925143!3d-7.5600626!2m3!1f0!2f0!3f0!3m2!1i640!2i320!4f13.1!3m3!1m2!1s0x2e7a156278d89c59%3A0x47d207216d8defb4!2sHomeslice%20Eatery%20and%20Bistro!5e0!3m2!1sen!2sid!4v1748654321001!5m2!1sen!2sid" title="Homeslice mini map">
+<iframe id="locMapMini" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d496!2d110.7925143!3d-7.5600626!2m3!1f0!2f0!3f0!3m2!1i640!2i320!4f13.1!3m3!1m2!1s0x2e7a156278d89c59%3A0x47d207216d8defb4!2sHomeslice%20Eatery%20and%20Bistro!5e0!3m2!1sen!2sid!4v1748654321001!5m2!1sen!2sid" title="Homeslice mini map">
 </iframe>
-<div class="mini-map-overlay" onclick="window.open('https://maps.app.goo.gl/Ehq2zvhpXDJryhbo9','_blank','noopener')">
+<div class="mini-map-overlay" id="locMapOverlay" onclick="window.open('https://maps.app.goo.gl/Ehq2zvhpXDJryhbo9','_blank','noopener')">
 <span class="mini-map-pin">📍 Open in Maps</span>
 </div>
 </div>
-<a class="btn-directions" href="https://maps.app.goo.gl/Ehq2zvhpXDJryhbo9" rel="noopener" target="_blank">
+<a class="btn-directions" id="locDirections" href="https://maps.app.goo.gl/Ehq2zvhpXDJryhbo9" rel="noopener" target="_blank">
         →  Get Directions
       </a>
 </div>
@@ -1426,6 +1426,15 @@ body{min-height:100svh;height:100svh;overflow:hidden;overscroll-behavior:none}
     if(ct&&c.phone)ct.innerHTML=esc(c.phone)+(c.whatsapp?'<br><a href="'+esc(c.whatsapp)+'" rel="noopener" target="_blank" style="color:var(--gld);text-decoration:none">WhatsApp us</a>':'');
     const so=document.getElementById('locSocial');
     if(so&&(c.instagram||c.tiktok))so.innerHTML=(c.instagram?'<a class="social-btn" href="'+esc(c.instagram)+'" rel="noopener" target="_blank">Instagram</a>':'')+(c.tiktok?'<a class="social-btn" href="'+esc(c.tiktok)+'" rel="noopener" target="_blank">TikTok</a>':'');
+    // Address (body; "\n" -> line break) + the Google-Maps links/embeds.
+    const ad=document.getElementById('locAddress');
+    if(ad&&sec.body)ad.innerHTML=esc(sec.body).replace(/\\n|\n/g,'<br>');
+    if(c.maps_url){
+      const dir=document.getElementById('locDirections');if(dir)dir.href=c.maps_url;
+      const ov=document.getElementById('locMapOverlay');if(ov)ov.setAttribute('onclick',"window.open('"+c.maps_url.replace(/'/g,'')+"','_blank','noopener')");
+    }
+    const big=document.getElementById('locMapBig');if(big&&c.map_embed)big.src=c.map_embed;
+    const mini=document.getElementById('locMapMini');if(mini&&c.mini_map_embed)mini.src=c.mini_map_embed;
   }
 
   async function sections(){
@@ -1449,6 +1458,31 @@ body{min-height:100svh;height:100svh;overflow:hidden;overscroll-behavior:none}
      Same source the order page reads; falls back to static markup on failure. ── */
   const VGROUPS=new Set(['size','duration','spice_level']);
   const kfmt=n=>{n=Number(n)||0;return n>=1000?'Rp '+Math.round(n/1000)+'K':'Rp '+n;};
+  function priceText(it){
+    const base=Number(it.price)||0;
+    const variants=(it.catalog_item_options||[]).filter(o=>VGROUPS.has(o.option_group));
+    return variants.length?'from '+kfmt(Math.min.apply(null,variants.map(v=>base+(Number(v.price_delta)||0)))):kfmt(base);
+  }
+  /* Refresh the curated signature sections + carousel slides with live catalog
+     data (price/description/photo/badge), matched by dish name (data-dish or the
+     image alt). Curation + line-broken names stay in the markup; only data syncs. */
+  function enhanceShowcase(items){
+    const byName={};items.forEach(it=>byName[String(it.name||'').toLowerCase()]=it);
+    const look=el=>{const img=el.querySelector('img');return byName[String(el.getAttribute('data-dish')||(img&&img.alt)||'').toLowerCase()];};
+    [].slice.call(document.querySelectorAll('.sec-sig')).forEach(sec=>{
+      const it=look(sec);if(!it)return;const md=it.metadata||{};
+      const img=sec.querySelector('.sig-photo img');if(img&&it.photo_url){img.src=it.photo_url;img.alt=it.name;}
+      const p=sec.querySelector('.sig-price');if(p)p.textContent=priceText(it);
+      const d=sec.querySelector('.sig-desc');if(d&&md.description)d.textContent=md.description;
+      const b=sec.querySelector('.badge');if(b&&md.badge)b.textContent=md.badge;
+    });
+    [].slice.call(document.querySelectorAll('.car-slide')).forEach(slide=>{
+      const it=look(slide);if(!it)return;const md=it.metadata||{};
+      const img=slide.querySelector('img');if(img&&it.photo_url){img.src=it.photo_url;img.alt=it.name;}
+      const p=slide.querySelector('.car-dish-price');if(p)p.textContent=priceText(it);
+      const d=slide.querySelector('.car-dish-desc');if(d&&md.description)d.textContent=md.description;
+    });
+  }
   function staggerActive(){
     const pane=document.querySelector('.sec-menu .menu-pane.on');if(!pane)return;
     [].slice.call(pane.querySelectorAll('.menu-item,.drink-cat')).forEach(function(el,i){
@@ -1464,6 +1498,7 @@ body{min-height:100svh;height:100svh;overflow:hidden;overscroll-behavior:none}
         getJSON('/catalog_items?select=id,name,price,category_id,photo_url,metadata,catalog_item_options(name,option_group,price_delta)&is_active=eq.true'),
         getJSON('/categories?select=id,name,sort_order&order=sort_order'),
       ]);
+      if(items.length)enhanceShowcase(items);
       const tabs=document.getElementById('mtabs');
       if(!tabs||!items.length||!cats.length)return;
       const byCat=new Map();cats.forEach(c=>byCat.set(c.id,{name:c.name,items:[]}));
@@ -1484,9 +1519,7 @@ body{min-height:100svh;height:100svh;overflow:hidden;overscroll-behavior:none}
 
       const paneHTML=cols.map((g,i)=>{
         const cards=g.items.map(it=>{
-          const base=Number(it.price)||0;
-          const variants=(it.catalog_item_options||[]).filter(o=>VGROUPS.has(o.option_group));
-          const price=variants.length?'from '+kfmt(Math.min.apply(null,variants.map(v=>base+(Number(v.price_delta)||0)))):kfmt(base);
+          const price=priceText(it);
           const md=it.metadata||{};
           const badge=md.badge?'<div class="badge">'+esc(md.badge)+'</div>':'';
           const desc=md.description?'<div class="mi-desc">'+esc(md.description)+'</div>':'';
