@@ -62,6 +62,7 @@ body{background:var(--esp);color:var(--crm);font-family:var(--fs);overflow:hidde
 .hero-tag{font-size:.6rem;letter-spacing:.4em;text-transform:uppercase;color:var(--gld);margin-bottom:2rem;opacity:0;transform:translateY(16px);transition:opacity .9s .2s,transform .9s .2s}
 .hero-title{font-family:var(--ff);font-size:clamp(3.4rem,8vw,7.4rem);font-weight:700;line-height:.9;text-transform:uppercase;letter-spacing:.03em;color:var(--crm);margin-bottom:1.2rem;opacity:0;transform:translateY(24px);transition:opacity .9s .35s,transform .9s .35s;text-shadow:0 10px 24px rgba(0,0,0,.26)}
 .hero-title em{font-style:italic;font-weight:300;color:var(--gld2)}
+.story-title em,.space-title em,.loc-title em{font-style:italic;font-weight:300;color:var(--gld2)}
 .hero-sub{font-size:.82rem;letter-spacing:.08em;color:rgba(250,246,239,.68);line-height:1.7;max-width:430px;margin-bottom:2.2rem;opacity:0;transition:opacity .9s .5s;text-shadow:0 8px 20px rgba(0,0,0,.22)}
 .hero-cta{display:inline-flex;gap:1.2rem;flex-wrap:wrap;opacity:0;transition:opacity .9s .65s}
 .sec-hero.active .hero-tag,.sec-hero.active .hero-title,.sec-hero.active .hero-sub,.sec-hero.active .hero-cta{opacity:1;transform:none}
@@ -1039,12 +1040,12 @@ body{min-height:100svh;height:100svh;overflow:hidden;overscroll-behavior:none}
 </div>
 <div class="loc-row">
 <div class="loc-lbl">Hours</div>
-<div class="loc-val">Mon–Tue, Thu–Sat &nbsp; 12:00 – 22:00<br/>Wednesday &nbsp; Closed<br/>Sunday &nbsp; 11:00 – 21:00</div>
+<div class="loc-val" id="locHours">Mon–Tue, Thu–Sat &nbsp; 12:00 – 22:00<br/>Wednesday &nbsp; Closed<br/>Sunday &nbsp; 11:00 – 21:00</div>
 </div>
 <div class="loc-row">
 <div class="loc-lbl">Contact</div>
-<div class="loc-val">+62 878-1944-2998<br/><a href="https://wa.me/6287819442998" style="color:var(--gld);text-decoration:none">WhatsApp us</a></div>
-<div class="social-row">
+<div class="loc-val" id="locContact">+62 878-1944-2998<br/><a href="https://wa.me/6287819442998" style="color:var(--gld);text-decoration:none">WhatsApp us</a></div>
+<div class="social-row" id="locSocial">
 <a class="social-btn" href="https://www.instagram.com/homeslice.id/" rel="noopener" target="_blank">Instagram</a>
 <a class="social-btn" href="https://www.tiktok.com/@homeslice.id" rel="noopener" target="_blank">TikTok</a>
 </div>
@@ -1191,14 +1192,16 @@ body{min-height:100svh;height:100svh;overflow:hidden;overscroll-behavior:none}
 
   /* ---------- Story stat count-up ---------- */
   (function(){
-    var parsed=[].slice.call(document.querySelectorAll('.num-val')).map(function(el){
-      var m=el.textContent.trim().match(/^(\d+)(.*)$/);
-      return {el:el,target:m?parseInt(m[1],10):0,suffix:m?m[2]:''};
-    });
-    if(!parsed.length) return;
+    var story=document.querySelector('.sec-story');
     var done=false;
     function run(){
       if(done) return; done=true;
+      /* Snapshot targets at run-time so data-driven stat values (applied
+         asynchronously on load) are picked up instead of the static defaults. */
+      var parsed=[].slice.call(document.querySelectorAll('.num-val')).map(function(el){
+        var m=el.textContent.trim().match(/^(\d+)(.*)$/);
+        return {el:el,target:m?parseInt(m[1],10):0,suffix:m?m[2]:''};
+      });
       parsed.forEach(function(p){
         if(reduce){p.el.textContent=p.target+p.suffix;return;}
         var start=null,dur=1300;
@@ -1211,7 +1214,6 @@ body{min-height:100svh;height:100svh;overflow:hidden;overscroll-behavior:none}
         requestAnimationFrame(step);
       });
     }
-    var story=document.querySelector('.sec-story');
     if('IntersectionObserver' in window && story){
       new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting) run();});},{threshold:.35}).observe(story);
     } else { run(); }
@@ -1368,14 +1370,21 @@ body{min-height:100svh;height:100svh;overflow:hidden;overscroll-behavior:none}
 })();
 </script>
 <script>
-/* ── data-driven: theme + section prose from Supabase (content seeded; falls
-   back to the static markup so nothing ever goes blank) ── */
+/* ── data-driven: theme + section content + live menu from Supabase. Content is
+   seeded so nothing is ever blank; on any failure the static markup is kept. ── */
 (function(){
   const REST='https://gfekclkhdrqyncmvnjsn.supabase.co/rest/v1';
   const KEY='sb_publishable_xwHcysY4WKoxKLXTN4rqng_JEtWUwU6';
   const HEAD={apikey:KEY,Authorization:'Bearer '+KEY};
-  const esc=s=>String(s==null?'':s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
+  const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
   async function getJSON(p){const r=await fetch(REST+p,{headers:HEAD});if(!r.ok)throw 0;return r.json();}
+
+  /* Title markup convention (keeps the signature multi-line, gold-italic look
+     editable as plain text): "\n" → line break, *word* → <em>. */
+  const titleHTML=s=>esc(s).replace(/\\n|\n/g,'<br>').replace(/\*([^*]+)\*/g,'<em>$1</em>');
+  const setTitle=(sel,v)=>{const el=document.querySelector(sel);if(el&&v)el.innerHTML=titleHTML(v);};
+  const prose=s=>(s||'').split(/\n\n+/).map(p=>'<p>'+esc(p)+'</p>').join('');
+
   async function theme(){
     try{
       const rows=await getJSON('/website_theme?select=*&limit=1');if(!rows.length)return;
@@ -1390,18 +1399,114 @@ body{min-height:100svh;height:100svh;overflow:hidden;overscroll-behavior:none}
       if(t.extra_tokens&&typeof t.extra_tokens==='object')for(const k in t.extra_tokens)if(t.extra_tokens[k])st.setProperty(k,t.extra_tokens[k]);
     }catch(e){}
   }
-  const prose=s=>(s||'').split(/\n\n+/).map(p=>'<p>'+esc(p)+'</p>').join('');
+
+  /* Ordered "n1,n2,…" content keys (stat1/day1) → [value,label] pairs, sorted by
+     key so the flat content map the in-app editor writes stays order-stable. */
+  function ordered(content,prefix){
+    if(!content)return [];
+    return Object.keys(content).filter(k=>new RegExp('^'+prefix+'\\d+$').test(k)).sort()
+      .map(k=>{const i=String(content[k]).indexOf('|');return i<0?[content[k],'']:[content[k].slice(0,i),content[k].slice(i+1)];});
+  }
+
+  function applyStats(content){
+    const wrap=document.querySelector('.story-nums');if(!wrap)return;
+    const rows=ordered(content,'stat');if(!rows.length)return;
+    wrap.innerHTML=rows.map(([v,l])=>'<div><div class="num-val">'+esc(v)+'</div><div class="num-lbl">'+esc(l)+'</div></div>').join('');
+  }
+  function applyHours(sec){
+    const el=document.getElementById('locHours');if(!el||!sec)return;
+    let rows=ordered(sec.content,'day');
+    if(!rows.length&&sec.content)rows=Object.keys(sec.content).map(k=>[k,sec.content[k]]); // legacy flat map
+    if(!rows.length)return;
+    el.innerHTML=rows.map(([l,v])=>esc(l)+' &nbsp; '+esc(v)).join('<br>');
+  }
+  function applyContact(sec){
+    if(!sec)return;const c=sec.content||{};
+    const ct=document.getElementById('locContact');
+    if(ct&&c.phone)ct.innerHTML=esc(c.phone)+(c.whatsapp?'<br><a href="'+esc(c.whatsapp)+'" rel="noopener" target="_blank" style="color:var(--gld);text-decoration:none">WhatsApp us</a>':'');
+    const so=document.getElementById('locSocial');
+    if(so&&(c.instagram||c.tiktok))so.innerHTML=(c.instagram?'<a class="social-btn" href="'+esc(c.instagram)+'" rel="noopener" target="_blank">Instagram</a>':'')+(c.tiktok?'<a class="social-btn" href="'+esc(c.tiktok)+'" rel="noopener" target="_blank">TikTok</a>':'');
+  }
+
   async function sections(){
     try{
-      const secs=await getJSON('/website_sections?select=section_key,body');const by={};
-      secs.forEach(s=>by[s.section_key]=s);
-      const story=by.about||by.story,space=by.space,hero=by.hero;
-      const sb=document.querySelector('.story-body');if(sb&&story&&story.body)sb.innerHTML=prose(story.body);
-      const pb=document.querySelector('.space-body');if(pb&&space&&space.body)pb.innerHTML=prose(space.body);
-      const hs=document.querySelector('.hero-sub');if(hs&&hero&&hero.body)hs.textContent=hero.body;
+      const secs=await getJSON('/website_sections?select=section_key,title,body,content');
+      const by={};secs.forEach(s=>by[s.section_key]=s);
+      const hero=by.hero,story=by.about||by.story,space=by.space,contact=by.contact;
+      if(hero){setTitle('.hero-title .title-live',hero.title);
+        const hs=document.querySelector('.hero-sub');if(hs&&hero.body)hs.textContent=hero.body;}
+      if(story){setTitle('.story-title .title-live',story.title);
+        const sb=document.querySelector('.story-body');if(sb&&story.body)sb.innerHTML=prose(story.body);
+        applyStats(story.content);}
+      if(space){setTitle('.space-title .title-live',space.title);
+        const pb=document.querySelector('.space-body');if(pb&&space.body)pb.innerHTML=prose(space.body);}
+      if(contact)setTitle('.loc-title .title-live',contact.title);
+      applyHours(by.hours);applyContact(contact);
     }catch(e){}
   }
-  theme();sections();
+
+  /* ── Live menu: rebuild the Full Menu tabs + panes from the POS catalog.
+     Same source the order page reads; falls back to static markup on failure. ── */
+  const VGROUPS=new Set(['size','duration','spice_level']);
+  const kfmt=n=>{n=Number(n)||0;return n>=1000?'Rp '+Math.round(n/1000)+'K':'Rp '+n;};
+  function staggerActive(){
+    const pane=document.querySelector('.sec-menu .menu-pane.on');if(!pane)return;
+    [].slice.call(pane.querySelectorAll('.menu-item,.drink-cat')).forEach(function(el,i){
+      el.classList.remove('rise');void el.offsetWidth;
+      el.style.animationDelay=(i*55)+'ms';el.classList.add('rise');});
+  }
+  function tabBtn(name,i,on){
+    return '<button aria-controls="mp-'+i+'" aria-selected="'+(!!on)+'" class="menu-tab'+(on?' on':'')+'" onclick="mTab('+i+')" role="tab" type="button">'+esc(name)+'</button>';
+  }
+  async function menu(){
+    try{
+      const [items,cats]=await Promise.all([
+        getJSON('/catalog_items?select=id,name,price,category_id,photo_url,metadata,catalog_item_options(name,option_group,price_delta)&is_active=eq.true'),
+        getJSON('/categories?select=id,name,sort_order&order=sort_order'),
+      ]);
+      const tabs=document.getElementById('mtabs');
+      if(!tabs||!items.length||!cats.length)return;
+      const byCat=new Map();cats.forEach(c=>byCat.set(c.id,{name:c.name,items:[]}));
+      items.forEach(it=>{const g=byCat.get(it.category_id);if(g)g.items.push(it);});
+      // Food categories (those with catalog items). The Drinks category is
+      // excluded here — its curated tab/pane is preserved as the last tab even
+      // once drinks exist as catalog items (so seeding them for online ordering
+      // never double-renders the Drinks tab on the landing).
+      const cols=[...byCat.values()].filter(g=>g.items.length && !/drink|beverage/i.test(g.name));
+      if(!cols.length)return;
+      const drinksPaneEl=document.querySelector('.drinks-grid')?document.querySelector('.drinks-grid').closest('.menu-pane'):null;
+      const drinksTabBtn=[].slice.call(tabs.querySelectorAll('.menu-tab')).find(b=>/drink/i.test(b.textContent));
+      const drinksName=drinksTabBtn?drinksTabBtn.textContent.trim():'Drinks';
+
+      let tabHTML=cols.map((g,i)=>tabBtn(g.name,i,i===0));
+      if(drinksPaneEl)tabHTML.push(tabBtn(drinksName,cols.length,false));
+      tabs.innerHTML=tabHTML.join('');
+
+      const paneHTML=cols.map((g,i)=>{
+        const cards=g.items.map(it=>{
+          const base=Number(it.price)||0;
+          const variants=(it.catalog_item_options||[]).filter(o=>VGROUPS.has(o.option_group));
+          const price=variants.length?'from '+kfmt(Math.min.apply(null,variants.map(v=>base+(Number(v.price_delta)||0)))):kfmt(base);
+          const md=it.metadata||{};
+          const badge=md.badge?'<div class="badge">'+esc(md.badge)+'</div>':'';
+          const desc=md.description?'<div class="mi-desc">'+esc(md.description)+'</div>':'';
+          const photo=it.photo_url?'<div class="mi-photo media-tilt"><img alt="'+esc(it.name)+'" decoding="async" loading="lazy" onclick="openLB(this)" src="'+esc(it.photo_url)+'"/></div>':'';
+          return '<div class="menu-item">'+photo+'<div>'+badge+'<div class="mi-name">'+esc(it.name)+'</div>'+desc+'<div class="mi-foot"><span class="mi-price">'+esc(price)+'</span><a class="mi-order" href="order.html" rel="noopener" target="_blank">Order</a></div></div></div>';
+        }).join('');
+        const fill=(g.items.length%2)?'<div class="menu-fill" aria-hidden="true"></div>':'';
+        return '<div class="menu-pane'+(i===0?' on':'')+'" id="mp-'+i+'" role="tabpanel"><div class="menu-grid">'+cards+fill+'</div></div>';
+      }).join('');
+
+      // Drop the old food panes, keep the static Drinks pane, insert new ones
+      // before it so positional index lines up with the rebuilt tabs (mTab).
+      [].slice.call(document.querySelectorAll('.menu-pane')).forEach(p=>{if(p!==drinksPaneEl)p.remove();});
+      tabs.insertAdjacentHTML('afterend',paneHTML);
+      if(drinksPaneEl){drinksPaneEl.classList.remove('on');drinksPaneEl.id='mp-'+cols.length;}
+      tabs.addEventListener('click',e=>{if(e.target.closest('.menu-tab'))setTimeout(staggerActive,0);});
+    }catch(e){}
+  }
+
+  theme();sections();menu();
 })();
 </script>
 </body>
