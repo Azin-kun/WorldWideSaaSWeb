@@ -109,8 +109,12 @@ a{color:inherit;text-decoration:none}
   border-radius:14px 14px 0 0;max-height:90vh;overflow:auto;transform:translateY(100%);transition:transform .3s;padding:1.2rem}
 .sheet.show{transform:translateY(0)}
 .sheet h3{font-family:var(--ff);font-size:1.7rem;margin-bottom:.6rem}
-.line{display:grid;grid-template-columns:1fr auto auto;gap:.6rem;align-items:center;padding:.5rem 0;border-bottom:1px dotted var(--line)}
+.citem{border-bottom:1px dotted var(--line)}
+.line{display:grid;grid-template-columns:1fr auto auto;gap:.6rem;align-items:center;padding:.5rem 0}
 .qtybox{display:flex;align-items:center;gap:.5rem}
+.lnote{width:100%;margin:0 0 .55rem;padding:.45rem .6rem;background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:8px;color:#fff;font:inherit;font-size:.84rem}
+.lnote:focus{outline:none;border-color:var(--gld)}
+.lnote::placeholder{color:rgba(255,255,255,.45)}
 .qb{width:26px;height:26px;border:1px solid var(--line);background:transparent;color:var(--crm);border-radius:50%;cursor:pointer;font-size:1rem}
 .ltot{color:var(--gld);font-weight:700;min-width:78px;text-align:right}
 .sumrows{margin:.8rem 0}
@@ -358,6 +362,8 @@ function addToCart(id, optId){
   toast((vname?name+' ('+vname+')':name)+' added');
 }
 function changeQty(key,d){ const e=cart.get(key); if(!e) return; e.qty+=d; if(e.qty<=0) cart.delete(key); updateCartBar(); saveCart(); renderCart(); if(cart.size===0) closeCart(); }
+// Per-item note. Updates data + cache only (no re-render) so the input keeps focus.
+function setItemNote(key,val){ const e=cart.get(key); if(!e) return; e.note=val; saveCart(); }
 function cartCount(){ let n=0; cart.forEach(e=>n+=e.qty); return n; }
 /* Takeaway packaging, per item ordered (matches create_public_order server-side):
    Pide Rp 1.700 · regular pizza Rp 3.900 · personal pizza Rp 3.200 · all else Rp 1.700. */
@@ -398,7 +404,7 @@ function restoreCart(){
       if(!e || !e.catalog_item_id || !(e.qty>0)) return;
       const cur=allItems.find(i=>i.id===e.catalog_item_id); if(cur && cur.out) return; // skip now-sold-out
       cart.set(keyOf(e.catalog_item_id, e.option_id),
-        {catalog_item_id:e.catalog_item_id, option_id:e.option_id||null, name:e.name, variant_name:e.variant_name||null, price:e.price, qty:e.qty});
+        {catalog_item_id:e.catalog_item_id, option_id:e.option_id||null, name:e.name, variant_name:e.variant_name||null, price:e.price, qty:e.qty, note:e.note||''});
     });
     if(data.type==='dine_in'){ const el=document.querySelector('#typeSeg .opt[data-type="dine_in"]'); if(el) setType(el);
       set('oDate',data.oDate); set('oTime',data.oTime); set('oParty',data.oParty); }
@@ -411,7 +417,8 @@ function renderCart(){
   if(cart.size===0){ el.innerHTML='<div class="empty">Your cart is empty.</div>'; }
   else{
     let html=''; cart.forEach((e,key)=>{ const label=e.variant_name?`${e.name} · ${e.variant_name}`:e.name;
-      html+=`<div class="line"><span>${esc(label)}</span><span class="qtybox"><button class="qb" onclick="changeQty('${key}',-1)">−</button><span>${e.qty}</span><button class="qb" onclick="changeQty('${key}',1)">+</button></span><span class="ltot">${fmt(e.price*e.qty)}</span></div>`; });
+      html+=`<div class="citem"><div class="line"><span>${esc(label)}</span><span class="qtybox"><button class="qb" onclick="changeQty('${key}',-1)">−</button><span>${e.qty}</span><button class="qb" onclick="changeQty('${key}',1)">+</button></span><span class="ltot">${fmt(e.price*e.qty)}</span></div>`+
+        `<input class="lnote" type="text" maxlength="80" value="${esc(e.note||'')}" oninput="setItemNote('${key}',this.value)" placeholder="Note for this item (e.g. no onion, extra spicy)"/></div>`; });
     const t=calcTotals();
     html+='<div class="sumrows">'+`<div class="srow"><span>Subtotal</span><span>${fmt(t.sub)}</span></div>`+
       (svcPct?`<div class="srow"><span>Service (${svcPct}%)</span><span>${fmt(t.svc)}</span></div>`:'')+
@@ -479,7 +486,7 @@ function placeOrder(){
     const party=Math.max(parseInt($('oParty').value||'2',10)||2,1);
     resv={party, start:new Date(date+'T'+time), table:tableSel.order, dateStr:date, timeStr:time};
   }
-  const items=[...cart.values()].map(e=>({catalog_item_id:e.catalog_item_id, option_id:e.option_id, qty:e.qty}));
+  const items=[...cart.values()].map(e=>({catalog_item_id:e.catalog_item_id, option_id:e.option_id, qty:e.qty, note:(e.note||'').trim()||null}));
   const note=$('cNote').value.trim();
   const t=calcTotals();
   pending={ kind:'order', amount:t.deposit, id:null, create: async ()=>{
