@@ -270,7 +270,8 @@ async function getJSON(path){ const r=await fetch(REST+path,{headers:HEAD}); if(
 async function rpc(fn, payload){
   const r = await fetch(REST+'/rpc/'+fn,{method:'POST',headers:{...HEAD,'Content-Type':'application/json'},body:JSON.stringify({p_payload:payload})});
   if(!r.ok) throw new Error('HTTP '+r.status+' '+await r.text());
-  return r.json();
+  const body=await r.text();          // void RPCs (e.g. attach_payment_proof) return an empty 204 body
+  return body ? JSON.parse(body) : null;
 }
 
 function switchTab(t){
