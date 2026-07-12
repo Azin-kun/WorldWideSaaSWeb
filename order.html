@@ -498,15 +498,18 @@ function placeOrder(){
   const note=$('cNote').value.trim();
   const t=calcTotals();
   pending={ kind:'order', amount:t.deposit, id:null, create: async ()=>{
+    let bookingId=null;
     if(dineIn){
       const end=new Date(resv.start.getTime()+90*60000);
-      await rpc('create_public_booking',{branch_id:BRANCH_ID,customer_name:name,customer_phone:phone,
+      bookingId=await rpc('create_public_booking',{branch_id:BRANCH_ID,customer_name:name,customer_phone:phone,
         party_size:resv.party,note:note,deposit:t.deposit,start_time:resv.start.toISOString(),end_time:end.toISOString(),
         resource_id:resv.table?resv.table.id:null,from_order:true,
         resource_ref:(resv.table?resv.table.name+' · ':'')+resv.party+' pax (online order)',hp:$('hp_order').value});
     }
     const dineNote=dineIn?('Dine-in '+resv.dateStr+' '+resv.timeStr+(resv.table?' · Table '+resv.table.name:'')+' · '+resv.party+' pax'+(note?(' · '+note):'')):note;
-    return await rpc('create_public_order',{branch_id:BRANCH_ID,customer_name:name,customer_phone:phone,order_type:orderType,note:dineNote,items,hp:$('hp_order').value});
+    // booking_id links the table hold to the order so the 30-min server sweeper
+    // releases the table if this order is never paid (migration 0036).
+    return await rpc('create_public_order',{branch_id:BRANCH_ID,customer_name:name,customer_phone:phone,order_type:orderType,note:dineNote,items,booking_id:bookingId,hp:$('hp_order').value});
   }};
   showDeposit('order', t.deposit);
 }
@@ -703,7 +706,13 @@ async function commit(method){
     if(btn){ btn.textContent='✓ Checked out'; btn.disabled=true; }
     setStat('✓ Order checked out! Proof sent — we’ll confirm shortly. Thank you!',true);
     notifySuccess(pending.kind, pending.id);
-  }catch(e){ setStat('Something went wrong — please try again or use WhatsApp.',false); if(btn) btn.disabled=false; }
+  }catch(e){
+    // Surface the server's own reason when it sent one (sold out, table just
+    // taken, outside opening hours, expired…) instead of a generic apology.
+    const m=String(e&&e.message||'').match(/"message"\s*:\s*"([^"]+)"/);
+    setStat(m?m[1]:'Something went wrong — please try again or use WhatsApp.',false);
+    if(btn) btn.disabled=false;
+  }
 }
 // Success feedback after check-out: in-page toast + best-effort browser notification.
 function notifySuccess(kind,id){
