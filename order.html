@@ -28,6 +28,10 @@ a{color:inherit;text-decoration:none}
 .brand img{height:44px;width:auto;display:block}
 .back{font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--crm2)}
 .back:hover{color:var(--gld)}
+.branchsel{display:none;background:var(--brn);color:var(--crm);border:1px solid var(--line);border-radius:8px;
+  padding:.4rem .6rem;font-family:var(--fs);font-size:.72rem;font-weight:600;max-width:44vw}
+.branchsel:focus{outline:none;border-color:var(--gld)}
+.branchsel.show{display:inline-block}
 .tabs{display:flex;gap:8px;max-width:760px;margin:18px auto 8px;padding:0 1.2rem}
 .tab{flex:1;text-align:center;padding:.8rem;border:1px solid var(--line);background:var(--brn);color:var(--crm2);
   cursor:pointer;font-weight:700;font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;border-radius:10px;transition:all .25s}
@@ -150,6 +154,7 @@ a{color:inherit;text-decoration:none}
 
 <div class="top">
   <a class="brand" href="index.html"><img id="brandLogo" src="assets/img/logoHOMESLICE3-transparent.png" alt="Homeslice Eatery &amp; Bistro"/></a>
+  <select class="branchsel" id="branchSel" onchange="switchBranch(this.value)" aria-label="Choose location"></select>
   <a class="back" href="index.html">← Back to site</a>
 </div>
 
@@ -265,6 +270,7 @@ const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&l
 const code = id => String(id).replace(/-/g,'').slice(0,6).toUpperCase();
 
 let BRANCH_ID=null, taxPct=0, svcPct=0, allItems=[], activeCat=null, orderType='takeaway', pending=null, proofFile=null, OPEN_HOURS={};
+let BRANCHES=[]; const BRANCH_KEY='hs_branch'; // multi-branch: chosen location persists per device
 const tableSel={reserve:null, order:null}; // chosen table per flow
 const cart = new Map(); // "itemId:optId" -> {catalog_item_id, option_id, name, variant_name, price, qty}
 const CART_CACHE_KEY='hs_order_cache_v1', CART_TTL=15*60*1000; // keep the customer's in-progress order for 15 min
@@ -291,10 +297,10 @@ async function loadMenu(){
     const [items, cats, settings, avail] = await Promise.all([
       getJSON('/catalog_items?select=id,name,price,category_id,photo_url,is_active,metadata,catalog_item_options(id,name,option_group,price_delta)&is_active=eq.true'),
       getJSON('/categories?select=id,name,sort_order&order=sort_order'),
-      getJSON('/branch_settings?select=default_tax_pct,default_service_pct,branch_id&limit=1'),
-      rpc('public_menu_availability', {}).catch(()=>[]),
+      getJSON('/branch_settings?select=default_tax_pct,default_service_pct,branch_id'+(BRANCH_ID?('&branch_id=eq.'+BRANCH_ID):'&limit=1')),
+      rpc('public_menu_availability', BRANCH_ID?{branch_id:BRANCH_ID}:{}).catch(()=>[]),
     ]);
-    const s = settings[0]||{}; taxPct=+s.default_tax_pct||0; svcPct=+s.default_service_pct||0; BRANCH_ID=s.branch_id||null;
+    const s = settings[0]||{}; taxPct=+s.default_tax_pct||0; svcPct=+s.default_service_pct||0; BRANCH_ID=BRANCH_ID||s.branch_id||null;
     // Items whose recipe can't be made from current Storage stock → sold out.
     // max_producible = units still makeable (null = no recipe / unlimited).
     const availArr = avail||[];
@@ -712,13 +718,48 @@ function notifySuccess(kind,id){
   }catch(e){}
 }
 
+/* ---------- multi-branch location chooser ----------
+   Branches are read from branch_settings (anon-readable: id + business name).
+   The chosen branch drives the menu, availability, floor plan and the branch_id
+   sent to every write RPC. Resolution order: ?branch=<id> → saved → first.
+   The picker hides itself when there is only one location. */
+async function bootBranches(){
+  try{
+    BRANCHES = await getJSON('/branch_settings?select=branch_id,business_name&order=business_name');
+  }catch(e){ BRANCHES=[]; }
+  const ids = BRANCHES.map(b=>b.branch_id);
+  const qp = new URLSearchParams(location.search).get('branch');
+  let saved=null; try{ saved=localStorage.getItem(BRANCH_KEY); }catch(e){}
+  BRANCH_ID = (qp && ids.includes(qp)) ? qp
+            : (saved && ids.includes(saved)) ? saved
+            : (ids[0] || null);
+  try{ if(BRANCH_ID) localStorage.setItem(BRANCH_KEY, BRANCH_ID); }catch(e){}
+  const sel=$('branchSel');
+  if(sel && BRANCHES.length>1){
+    sel.innerHTML=BRANCHES.map(b=>`<option value="${esc(b.branch_id)}"${b.branch_id===BRANCH_ID?' selected':''}>${esc(b.business_name||'Location')}</option>`).join('');
+    sel.classList.add('show');
+  }
+}
+function switchBranch(id){
+  if(!id || id===BRANCH_ID) return;
+  BRANCH_ID=id;
+  try{ localStorage.setItem(BRANCH_KEY, id); }catch(e){}
+  // A different location has its own menu/prices — start the cart fresh.
+  cart.clear(); clearCartCache(); updateCartBar(); closeCart();
+  tableSel.reserve=null; tableSel.order=null;
+  $('menu').innerHTML='<div class="empty">Loading the menu…</div>';
+  loadMenu().then(()=>{ refreshTablesGeneric('rDate','rTime','rParty','tableList','reserve'); });
+  const b=BRANCHES.find(x=>x.branch_id===id);
+  toast('Now ordering from '+((b&&b.business_name)||'this location'));
+}
+
 /* ---------- boot ---------- */
 let toastT;
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2000); }
 $('rDate').value=new Date().toISOString().slice(0,10);
 // persist the order form as the customer edits it (15-min cache)
 ['cName','cPhone','cNote','oDate','oTime','oParty'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('input', saveCart); });
-loadMenu().then(()=>{ restoreCart(); refreshTablesGeneric('rDate','rTime','rParty','tableList','reserve'); });
+bootBranches().then(loadMenu).then(()=>{ restoreCart(); refreshTablesGeneric('rDate','rTime','rParty','tableList','reserve'); });
 // Website 'brand' (header logo) + 'hours' (open-hours for the time picker).
 getJSON('/website_sections?select=section_key,image_url,content&section_key=in.(brand,hours)').then(rows=>{
   (rows||[]).forEach(s=>{
