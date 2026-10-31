@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta name="robots" content="noindex, nofollow"/>
+<meta name="referrer" content="no-referrer"/>
+<title>Voucher Check — Homeslice</title>
+<meta name="description" content="Check a Homeslice Eatery &amp; Bistro voucher."/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,300;1,400&amp;family=Montserrat:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --esp:#160A06;--brn:#2C1810;--brn2:#4A2A18;
+  --gld:#C9934A;--gld2:#E1B66C;--gld3:rgba(201,147,74,.18);--crm:#FAF6EF;--crm2:#F2E8D8;
+  --line:rgba(201,147,74,.28);--line2:rgba(201,147,74,.5);--ter:#B65C3A;--ok:#7fe0a0;
+  --ff:'Cormorant Garamond',Georgia,serif;--fs:'Montserrat',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{background:var(--esp);color:var(--crm);font-family:var(--fs);line-height:1.55;overflow-x:hidden;min-height:100vh}
+a{color:inherit;text-decoration:none}
+.top{position:sticky;top:0;z-index:30;background:rgba(22,10,6,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;gap:.8rem;padding:.8rem 1rem}
+.brand{display:inline-flex;align-items:center}
+.brand img{height:44px;width:auto;display:block}
+.right{display:flex;align-items:center;gap:.9rem}
+.back{font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--crm2)}
+.back:hover{color:var(--gld)}
+.lang{display:flex;border:1px solid var(--line);border-radius:99px;overflow:hidden}
+.lang button{background:transparent;border:none;color:var(--crm2);font-family:var(--fs);font-size:.62rem;font-weight:700;
+  letter-spacing:.12em;padding:.35rem .6rem;cursor:pointer}
+.lang button.on{background:var(--gld);color:var(--esp)}
+.wrap{max-width:460px;margin:0 auto;padding:2.2rem 1rem 3rem}
+.eyebrow{text-align:center;font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gld2);margin-bottom:1rem}
+.card{border:1px solid var(--line);border-radius:14px;background:var(--brn);padding:2rem 1.4rem;text-align:center}
+.card.valid{border-color:var(--ok)}
+.card.bad{border-color:var(--ter)}
+.icon{width:64px;height:64px;border-radius:50%;margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;
+  font-size:1.9rem;font-weight:700;border:2px solid var(--line2);color:var(--gld)}
+.valid .icon{border-color:var(--ok);color:var(--ok)}
+.bad .icon{border-color:var(--ter);color:var(--ter)}
+h1{font-family:var(--ff);font-size:2.2rem;font-weight:700;line-height:1.1;margin-bottom:.6rem}
+.value{font-family:var(--ff);font-size:2.6rem;font-weight:700;color:var(--gld);line-height:1.1;margin:.4rem 0 .2rem;overflow-wrap:anywhere}
+.name{font-size:1rem;color:var(--crm);margin-bottom:.8rem;overflow-wrap:anywhere}
+.detail{font-size:.9rem;color:var(--crm2)}
+.btn{display:inline-block;margin-top:1.3rem;background:var(--gld);color:var(--esp);border:none;padding:.85rem 2rem;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;font-size:.72rem;cursor:pointer;border-radius:4px;font-family:var(--fs)}
+.btn[disabled]{opacity:.6;cursor:default}
+.spin{width:36px;height:36px;margin:0 auto 1rem;border:3px solid var(--line);border-top-color:var(--gld);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+.foot{text-align:center;font-size:.72rem;color:var(--crm2);opacity:.7;margin-top:1.4rem}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <a class="brand" href="index.html"><img src="assets/img/logoHOMESLICE3-transparent.png" alt="Homeslice Eatery &amp; Bistro"/></a>
+  <div class="right">
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" id="langEn" onclick="setLang('en')">EN</button>
+      <button type="button" id="langId" onclick="setLang('id')">ID</button>
+    </div>
+    <a class="back" href="index.html" id="backLink">← Back to site</a>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="eyebrow" id="eyebrow">Voucher check</div>
+  <div class="card" id="card" aria-live="polite">
+    <div id="loading"><div class="spin"></div><div class="detail" id="loadingText">Checking voucher…</div></div>
+    <div id="result" class="hidden">
+      <div class="icon" id="icon" aria-hidden="true"></div>
+      <h1 id="heading"></h1>
+      <div class="value hidden" id="value"></div>
+      <div class="name hidden" id="name"></div>
+      <div class="detail hidden" id="detail"></div>
+      <button type="button" class="btn hidden" id="retry" onclick="check()">Retry</button>
+    </div>
+  </div>
+  <div class="foot" id="foot">Homeslice Eatery &amp; Bistro · Surakarta</div>
+</main>
+
+<script>
+/* ───── CONFIG: publishable/anon key only — public-safe. Never the service_role key. ───── */
+const SUPABASE_URL = 'https://gfekclkhdrqyncmvnjsn.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_xwHcysY4WKoxKLXTN4rqng_JEtWUwU6';
+/* ──────────────────────────────────────────────────────────────────────────── */
+
+const REST = SUPABASE_URL.replace(/\/+$/, '') + '/rest/v1';
+const HEAD = { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY };
+const $ = id => document.getElementById(id);
+const LANG_KEY = 'hs_lang';
+const CODE_RE = /^[0-9a-f]{32}$/;
+
+const T = {
+  en: {
+    title: 'Voucher Check — Homeslice', eyebrow: 'Voucher check', back: '← Back to site', loading: 'Checking voucher…',
+    valid: 'Voucher valid', used: 'Already used', expired: 'Voucher expired', void: 'Voucher cancelled',
+    not_found: 'Voucher not found', failed: "Couldn't check this voucher",
+    failedDetail: 'Check your connection and try again.', retry: 'Retry',
+    off: p => p + '% off', validUntil: d => 'Valid until ' + d, expiredOn: d => 'Expired on ' + d,
+    months: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+  },
+  id: {
+    title: 'Cek Voucher — Homeslice', eyebrow: 'Cek voucher', back: '← Kembali ke situs', loading: 'Memeriksa voucher…',
+    valid: 'Voucher berlaku', used: 'Sudah digunakan', expired: 'Voucher kedaluwarsa', void: 'Voucher dibatalkan',
+    not_found: 'Voucher tidak ditemukan', failed: 'Voucher tidak dapat dicek',
+    failedDetail: 'Periksa koneksi Anda lalu coba lagi.', retry: 'Coba lagi',
+    off: p => 'Diskon ' + p + '%', validUntil: d => 'Berlaku sampai ' + d, expiredOn: d => 'Kedaluwarsa pada ' + d,
+    months: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
+  },
+};
+let lang = 'en';
+try { if (localStorage.getItem(LANG_KEY) === 'id') lang = 'id'; } catch (e) {}
+let last = null; // last rendered state, re-rendered on language change
+
+const fmtRp = n => 'Rp ' + (Number(n) || 0).toLocaleString('id-ID');
+// 'YYYY-MM-DD' -> '31 Dec 2026', without going through Date (no timezone shift).
+function fmtDate(s){
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || ''));
+  if (!m) return '';
+  return (+m[3]) + ' ' + T[lang].months[+m[2] - 1] + ' ' + m[1];
+}
+
+function show(el, text){ el.textContent = text; el.classList.remove('hidden'); }
+function hide(el){ el.textContent = ''; el.classList.add('hidden'); }
+
+function render(state, v){
+  last = { state, v };
+  const t = T[lang];
+  $('loading').classList.add('hidden');
+  $('result').classList.remove('hidden');
+  const card = $('card');
+  card.classList.toggle('valid', state === 'valid');
+  card.classList.toggle('bad', state !== 'valid' && state !== 'failed');
+  $('icon').textContent = state === 'valid' ? '✓' : state === 'failed' ? '!' : '✕';
+  $('heading').textContent = t[state];
+  hide($('value')); hide($('name')); hide($('detail'));
+  $('retry').classList.toggle('hidden', state !== 'failed');
+  $('retry').disabled = false;
+  if (state === 'valid') {
+    show($('value'), v.kind === 'percent' ? t.off(v.value) : fmtRp(v.value));
+    if (v.name_masked) show($('name'), v.name_masked);
+    const d = fmtDate(v.expires_on);
+    if (d) show($('detail'), t.validUntil(d));
+  } else if (state === 'expired') {
+    const d = fmtDate(v.expires_on);
+    if (d) show($('detail'), t.expiredOn(d));
+  } else if (state === 'failed') {
+    show($('detail'), t.failedDetail);
+  }
+}
+
+function applyLang(){
+  const t = T[lang];
+  document.documentElement.lang = lang;
+  document.title = t.title;
+  $('eyebrow').textContent = t.eyebrow;
+  $('backLink').textContent = t.back;
+  $('loadingText').textContent = t.loading;
+  $('retry').textContent = t.retry;
+  $('langEn').classList.toggle('on', lang === 'en');
+  $('langId').classList.toggle('on', lang === 'id');
+  $('langEn').setAttribute('aria-pressed', String(lang === 'en'));
+  $('langId').setAttribute('aria-pressed', String(lang === 'id'));
+  if (last) render(last.state, last.v);
+}
+function setLang(l){
+  lang = l === 'id' ? 'id' : 'en';
+  try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+  applyLang();
+}
+
+function codeFromUrl(){
+  let c = '';
+  try { c = new URLSearchParams(location.search).get('c') || ''; } catch (e) {}
+  return c.trim().toLowerCase();
+}
+
+// A missing or malformed code is "not found" without a request. A request that
+// throws, times out or returns an unexpected body is "failed" (retry), never
+// "not found", so a real voucher is never called fake.
+async function check(){
+  const code = codeFromUrl();
+  if (!CODE_RE.test(code)) { render('not_found', {}); return; }
+  $('retry').disabled = true;
+  $('result').classList.add('hidden');
+  $('loading').classList.remove('hidden');
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 12000);
+  try {
+    const r = await fetch(REST + '/rpc/verify_voucher', {
+      method: 'POST', signal: ctl.signal,
+      headers: { ...HEAD, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_code: code }),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const v = await r.json();
+    const ok = v && ['valid','used','expired','void','not_found'].includes(v.status);
+    if (!ok) throw new Error('unexpected response');
+    render(v.status, v);
+  } catch (e) {
+    render('failed', {});
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+applyLang();
+check();
+</script>
+</body>
+</html>
